@@ -1,0 +1,26 @@
+S src
+S test
+S bench
+S mirage
+
+B _build/**
+
+FLG -safe-string -warn_error +1..49 -w +A-4-6-44-48
+
+PKG topkg
+PKG logs
+PKG ipaddr
+PKG cstruct
+PKG cstruct.ppx
+PKG result
+
+PKG nocrypto
+PKG alcotest
+
+PKG mirage-types
+PKG lwt
+PKG tcpip.ethif
+PKG mirage-clock-unix
+PKG mirage-unix
+PKG mirage-vnetif
+PKG arp.mirage

@@ -1,0 +1,19 @@
+description = "ARP implementation for OCaml"
+version = "%%VERSION_NUM%%"
+requires = "result cstruct ipaddr logs"
+archive(byte) = "arp.cma"
+archive(native) = "arp.cmxa"
+plugin(byte) = "arp.cma"
+plugin(native) = "arp.cmxs"
+
+package "mirage" (
+  description = "Mirage ARP implementation"
+  version = "%%VERSION_NUM%%"
+  requires = "mirage-types tcpip lwt arp"
+  directory= "mirage"
+  archive(byte) = "marp.cma"
+  archive(native) = "marp.cmxa"
+  plugin(byte) = "marp.cma"
+  plugin(native) = "marp.cmxs"
+  exists_if = "marp.cma"
+)

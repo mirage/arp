@@ -1,0 +1,13 @@
+true : annot, bin_annot, safe_string, principal, coverage
+true : warn_error(+1..49)
+true : warn(+A-4-6-44-48)
+true : package(result), package(cstruct)
+"src" : include
+
+<src/arp_wire.{ml,mli}>: package(cstruct.ppx)
+<src/arp_packet.{ml,mli}>: package(ipaddr)
+<src/arp_handler.{ml,mli}>: package(ipaddr), package(logs)
+
+<mirage/marp.{ml,mli}>: package(mirage-types), package(lwt), package(ipaddr), package(logs), package(cstruct), package(tcpip.ethif)
+
+<test/tests.{ml,native}>: package(cstruct), package(nocrypto), package(alcotest), package(nocrypto.unix), package(ipaddr), package(logs)

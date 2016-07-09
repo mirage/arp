@@ -1,0 +1,38 @@
+#!/bin/sh
+# This script is only used for developement. It is removed by the
+# distribution process.
+
+set -e
+
+OCAMLBUILD=${OCAMLBUILD:="ocamlbuild -tag debug -classic-display \
+                          -use-ocamlfind" }
+
+BENCH="-pkg mirage-vnetif -pkg lwt -pkg ipaddr -pkg tcpip.ethif -pkg mirage-clock-unix -pkg mirage-console.unix -pkg mirage-types -pkg nocrypto -pkg nocrypto.unix -pkg ipaddr -pkg lwt.unix"
+
+action ()
+{
+    case $1 in
+        default) action lib ;;
+        mirage) action lib ; $OCAMLBUILD -I mirage marp.cma marp.cmxa ;;
+        lib) $OCAMLBUILD -I src arp.cma arp.cmxa ;;
+        test) action lib ; $OCAMLBUILD test/tests.native ; ./tests.native ;;
+        coverage)
+            action clean ;
+            export BISECT_COVERAGE="YES" ;
+            action lib ;
+            $OCAMLBUILD -pkg bisect_ppx test/tests.native ;
+            ./tests.native ;
+            bisect-ppx-report -I _build/ -html coverage/ bisect0001.out ;;
+        bench) action lib ; action mirage ; $OCAMLBUILD $BENCH -I mirage bench/bench.native ;;
+        mbench)
+            rm bench/mbench.ml ;
+            cat bench/bench.ml | sed -e 's/Marp/Arpv4/g' > bench/mbench.ml ;
+            $OCAMLBUILD $BENCH -pkg tcpip.arpv4 bench/mbench.native ;;
+        clean) $OCAMLBUILD -clean ; rm -rf _tests ; rm -rf coverage ; rm -f bisect*.out ;;
+        *) $OCAMLBUILD $* ;;
+    esac
+}
+
+if [ $# -eq 0 ];
+then action default ;
+else action $*; fi
