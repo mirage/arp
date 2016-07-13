@@ -1,0 +1,139 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+<link rel="Start" href="index.html">
+<link rel="previous" href="Arp_handler.html">
+<link rel="next" href="Arp_wire.html">
+<link rel="Up" href="index.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Arp_handler" rel="Chapter" href="Arp_handler.html">
+<link title="Arp_packet" rel="Chapter" href="Arp_packet.html">
+<link title="Arp_wire" rel="Chapter" href="Arp_wire.html"><link title="Decoding" rel="Section" href="#2_Decoding">
+<link title="Encoding" rel="Section" href="#2_Encoding">
+<title>Arp_packet</title>
+</head>
+<body>
+<div class="navbar"><a class="pre" href="Arp_handler.html" title="Arp_handler">Previous</a>
+&nbsp;<a class="up" href="index.html" title="Index">Up</a>
+&nbsp;<a class="post" href="Arp_wire.html" title="Arp_wire">Next</a>
+</div>
+<h1>Module <a href="type_Arp_packet.html">Arp_packet</a></h1>
+
+<pre><span class="keyword">module</span> Arp_packet: <code class="code"><span class="keyword">sig</span></code> <a href="Arp_packet.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info module top">
+Conversion between wire and high-level data
+<p>
+
+    There is a <a href="Arp_wire.html">binary wire representation</a>, and a <a href="Arp_packet.html#TYPEt">high-level
+    datatype</a>.  This module converts between the two.  While decoding can result
+    in an error, encoding can not.<br>
+</div>
+<hr width="100%">
+
+<pre><code><span id="TYPEt"><span class="keyword">type</span> <code class="type"></code>t</span> = {</code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTt.operation">operation</span>&nbsp;: <code class="type"><a href="Arp_wire.html#TYPEop">Arp_wire.op</a></code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTt.source_mac">source_mac</span>&nbsp;: <code class="type">Macaddr.t</code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTt.source_ip">source_ip</span>&nbsp;: <code class="type">Ipaddr.V4.t</code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTt.target_mac">target_mac</span>&nbsp;: <code class="type">Macaddr.t</code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTt.target_ip">target_ip</span>&nbsp;: <code class="type">Ipaddr.V4.t</code>;</code></td>
+
+</tr></table>
+}
+
+<div class="info ">
+The high-level ARP frame consisting of the two address pairs and an operation.<br>
+</div>
+
+
+<pre><span id="VALpp"><span class="keyword">val</span> pp</span> : <code class="type">Format.formatter -> <a href="Arp_packet.html#TYPEt">t</a> -> unit</code></pre><div class="info ">
+<code class="code">pp ppf t</code> prints the frame <code class="code">t</code> on <code class="code">ppf</code>.<br>
+</div>
+
+<pre><code><span id="TYPEerror"><span class="keyword">type</span> <code class="type"></code>error</span> = </code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTerror.Too_short"><span class="constructor">Too_short</span></span></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTerror.Unusable"><span class="constructor">Unusable</span></span></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTerror.Unknown_operation"><span class="constructor">Unknown_operation</span></span> <span class="keyword">of</span> <code class="type">Cstruct.uint16</code></code></td>
+
+</tr></table>
+
+<div class="info ">
+The type of possible errors during decoding
+<p>
+<ul>
+<li><code class="code"><span class="constructor">Too_short</span></code> if the provided buffer is not long enough</li>
+<li><code class="code"><span class="constructor">Unusable</span></code> if the protocol or hardware address type is not IPv4 and Ethernet</li>
+<li><code class="code"><span class="constructor">Unknown_operation</span></code> if it is neither a request nor a reply</li>
+</ul>
+<br>
+</div>
+
+
+<pre><span id="VALpp_error"><span class="keyword">val</span> pp_error</span> : <code class="type">Format.formatter -> <a href="Arp_packet.html#TYPEerror">error</a> -> unit</code></pre><div class="info ">
+<code class="code">pp_error ppf err</code> prints the error <code class="code">err</code> on <code class="code">ppf</code>.<br>
+</div>
+<br>
+<h2 id="2_Decoding">Decoding</h2><br>
+
+<pre><span id="VALdecode"><span class="keyword">val</span> decode</span> : <code class="type">Cstruct.t -> (<a href="Arp_packet.html#TYPEt">t</a>, <a href="Arp_packet.html#TYPEerror">error</a>) Result.result</code></pre><div class="info ">
+<code class="code">decode buf</code> attempts to decode the buffer into an ARP frame <code class="code">t</code>.<br>
+</div>
+<br>
+<h2 id="2_Encoding">Encoding</h2><br>
+
+<pre><span id="VALencode"><span class="keyword">val</span> encode</span> : <code class="type"><a href="Arp_packet.html#TYPEt">t</a> -> Cstruct.t</code></pre><div class="info ">
+<code class="code">encode t</code> is a <code class="code">buf</code>, a freshly allocated buffer, which contains the
+    encoded ARP frame <code class="code">t</code>.<br>
+</div>
+
+<pre><span id="VALencode_into"><span class="keyword">val</span> encode_into</span> : <code class="type"><a href="Arp_packet.html#TYPEt">t</a> -> Cstruct.t -> unit</code></pre><div class="info ">
+<code class="code">encode_into t buf</code> encodes <code class="code">t</code> into the buffer <code class="code">buf</code> at offset 0.<br>
+<b>Raises</b> <code>Invalid_argument</code> if the buffer <code class="code">buf</code> is too small (below 28 bytes).<br>
+</div>
+</body></html>

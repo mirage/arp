@@ -1,0 +1,174 @@
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+<link rel="Start" href="index.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Arp_handler" rel="Chapter" href="Arp_handler.html">
+<link title="Arp_packet" rel="Chapter" href="Arp_packet.html">
+<link title="Arp_wire" rel="Chapter" href="Arp_wire.html"><title>Index of values</title>
+</head>
+<body>
+<div class="navbar">&nbsp;<a class="up" href="index.html" title="Index">Up</a>
+&nbsp;</div>
+<h1>Index of values</h1>
+<table>
+<tr><td align="left"><br>A</td></tr>
+<tr><td><a href="Arp_handler.html#VALalias">alias</a> [<a href="Arp_handler.html">Arp_handler</a>]</td>
+<td><div class="info">
+<code class="code">alias t ip</code> is <code class="code">t', out, <span class="keyword">as</span></code>, where <code class="code">t'</code> is <code class="code">t</code> extended by a static ARP
+    entry for <code class="code">ip</code>.
+</div>
+</td></tr>
+<tr><td align="left"><br>B</td></tr>
+<tr><td><a href="Arp_wire.html#VALblit_arp_sha">blit_arp_sha</a> [<a href="Arp_wire.html">Arp_wire</a>]</td>
+<td></td></tr>
+<tr><td><a href="Arp_wire.html#VALblit_arp_tha">blit_arp_tha</a> [<a href="Arp_wire.html">Arp_wire</a>]</td>
+<td></td></tr>
+<tr><td align="left"><br>C</td></tr>
+<tr><td><a href="Arp_wire.html#VALcopy_arp_sha">copy_arp_sha</a> [<a href="Arp_wire.html">Arp_wire</a>]</td>
+<td></td></tr>
+<tr><td><a href="Arp_wire.html#VALcopy_arp_tha">copy_arp_tha</a> [<a href="Arp_wire.html">Arp_wire</a>]</td>
+<td></td></tr>
+<tr><td><a href="Arp_handler.html#VALcreate">create</a> [<a href="Arp_handler.html">Arp_handler</a>]</td>
+<td><div class="info">
+<code class="code">create ~timeout ~retries mac ip)</code> is <code class="code">t, garp</code>.
+</div>
+</td></tr>
+<tr><td align="left"><br>D</td></tr>
+<tr><td><a href="Arp_packet.html#VALdecode">decode</a> [<a href="Arp_packet.html">Arp_packet</a>]</td>
+<td><div class="info">
+<code class="code">decode buf</code> attempts to decode the buffer into an ARP frame <code class="code">t</code>.
+</div>
+</td></tr>
+<tr><td align="left"><br>E</td></tr>
+<tr><td><a href="Arp_packet.html#VALencode">encode</a> [<a href="Arp_packet.html">Arp_packet</a>]</td>
+<td><div class="info">
+<code class="code">encode t</code> is a <code class="code">buf</code>, a freshly allocated buffer, which contains the
+    encoded ARP frame <code class="code">t</code>.
+</div>
+</td></tr>
+<tr><td><a href="Arp_packet.html#VALencode_into">encode_into</a> [<a href="Arp_packet.html">Arp_packet</a>]</td>
+<td><div class="info">
+<code class="code">encode_into t buf</code> encodes <code class="code">t</code> into the buffer <code class="code">buf</code> at offset 0.
+</div>
+</td></tr>
+<tr><td align="left"><br>G</td></tr>
+<tr><td><a href="Arp_wire.html#VALget_arp_hlen">get_arp_hlen</a> [<a href="Arp_wire.html">Arp_wire</a>]</td>
+<td></td></tr>
+<tr><td><a href="Arp_wire.html#VALget_arp_htype">get_arp_htype</a> [<a href="Arp_wire.html">Arp_wire</a>]</td>
+<td></td></tr>
+<tr><td><a href="Arp_wire.html#VALget_arp_op">get_arp_op</a> [<a href="Arp_wire.html">Arp_wire</a>]</td>
+<td></td></tr>
+<tr><td><a href="Arp_wire.html#VALget_arp_plen">get_arp_plen</a> [<a href="Arp_wire.html">Arp_wire</a>]</td>
+<td></td></tr>
+<tr><td><a href="Arp_wire.html#VALget_arp_ptype">get_arp_ptype</a> [<a href="Arp_wire.html">Arp_wire</a>]</td>
+<td></td></tr>
+<tr><td><a href="Arp_wire.html#VALget_arp_sha">get_arp_sha</a> [<a href="Arp_wire.html">Arp_wire</a>]</td>
+<td></td></tr>
+<tr><td><a href="Arp_wire.html#VALget_arp_spa">get_arp_spa</a> [<a href="Arp_wire.html">Arp_wire</a>]</td>
+<td></td></tr>
+<tr><td><a href="Arp_wire.html#VALget_arp_tha">get_arp_tha</a> [<a href="Arp_wire.html">Arp_wire</a>]</td>
+<td></td></tr>
+<tr><td><a href="Arp_wire.html#VALget_arp_tpa">get_arp_tpa</a> [<a href="Arp_wire.html">Arp_wire</a>]</td>
+<td></td></tr>
+<tr><td align="left"><br>H</td></tr>
+<tr><td><a href="Arp_wire.html#VALhexdump_arp">hexdump_arp</a> [<a href="Arp_wire.html">Arp_wire</a>]</td>
+<td></td></tr>
+<tr><td><a href="Arp_wire.html#VALhexdump_arp_to_buffer">hexdump_arp_to_buffer</a> [<a href="Arp_wire.html">Arp_wire</a>]</td>
+<td></td></tr>
+<tr><td align="left"><br>I</td></tr>
+<tr><td><a href="Arp_handler.html#VALin_cache">in_cache</a> [<a href="Arp_handler.html">Arp_handler</a>]</td>
+<td><div class="info">
+<code class="code">in_cache t ip</code> is <code class="code">mac option</code>, a MAC address if the ARP cache contains an
+    entry, <code class="code"><span class="constructor">None</span></code> otherwise.
+</div>
+</td></tr>
+<tr><td><a href="Arp_handler.html#VALinput">input</a> [<a href="Arp_handler.html">Arp_handler</a>]</td>
+<td><div class="info">
+<code class="code">input t buf</code> is <code class="code">t', reply, w</code>, which handles the input buffer <code class="code">buf</code> in the
+    state <code class="code">t</code>.
+</div>
+</td></tr>
+<tr><td><a href="Arp_wire.html#VALint_to_op">int_to_op</a> [<a href="Arp_wire.html">Arp_wire</a>]</td>
+<td></td></tr>
+<tr><td><a href="Arp_handler.html#VALip">ip</a> [<a href="Arp_handler.html">Arp_handler</a>]</td>
+<td><div class="info">
+<code class="code">ip t</code> is <code class="code">ip</code>, the configured IPv4 address.
+</div>
+</td></tr>
+<tr><td align="left"><br>O</td></tr>
+<tr><td><a href="Arp_wire.html#VALop_to_int">op_to_int</a> [<a href="Arp_wire.html">Arp_wire</a>]</td>
+<td></td></tr>
+<tr><td><a href="Arp_wire.html#VALop_to_string">op_to_string</a> [<a href="Arp_wire.html">Arp_wire</a>]</td>
+<td></td></tr>
+<tr><td align="left"><br>P</td></tr>
+<tr><td><a href="Arp_packet.html#VALpp">pp</a> [<a href="Arp_packet.html">Arp_packet</a>]</td>
+<td><div class="info">
+<code class="code">pp ppf t</code> prints the frame <code class="code">t</code> on <code class="code">ppf</code>.
+</div>
+</td></tr>
+<tr><td><a href="Arp_handler.html#VALpp">pp</a> [<a href="Arp_handler.html">Arp_handler</a>]</td>
+<td><div class="info">
+<code class="code">pp ppf t</code> prints the ARP handler <code class="code">t</code> on <code class="code">ppf</code> by iterating over all cache
+    entries.
+</div>
+</td></tr>
+<tr><td><a href="Arp_packet.html#VALpp_error">pp_error</a> [<a href="Arp_packet.html">Arp_packet</a>]</td>
+<td><div class="info">
+<code class="code">pp_error ppf err</code> prints the error <code class="code">err</code> on <code class="code">ppf</code>.
+</div>
+</td></tr>
+<tr><td align="left"><br>Q</td></tr>
+<tr><td><a href="Arp_handler.html#VALquery">query</a> [<a href="Arp_handler.html">Arp_handler</a>]</td>
+<td><div class="info">
+<code class="code">query t ip merge</code> is <code class="code">t', qres</code>, which looks for the <code class="code">ip</code> in the cache.
+</div>
+</td></tr>
+<tr><td align="left"><br>R</td></tr>
+<tr><td><a href="Arp_handler.html#VALremove">remove</a> [<a href="Arp_handler.html">Arp_handler</a>]</td>
+<td><div class="info">
+<code class="code">remove t ip</code> is <code class="code">t'</code>, where <code class="code">ip</code> is no longer in the cache.
+</div>
+</td></tr>
+<tr><td align="left"><br>S</td></tr>
+<tr><td><a href="Arp_wire.html#VALset_arp_hlen">set_arp_hlen</a> [<a href="Arp_wire.html">Arp_wire</a>]</td>
+<td></td></tr>
+<tr><td><a href="Arp_wire.html#VALset_arp_htype">set_arp_htype</a> [<a href="Arp_wire.html">Arp_wire</a>]</td>
+<td></td></tr>
+<tr><td><a href="Arp_wire.html#VALset_arp_op">set_arp_op</a> [<a href="Arp_wire.html">Arp_wire</a>]</td>
+<td></td></tr>
+<tr><td><a href="Arp_wire.html#VALset_arp_plen">set_arp_plen</a> [<a href="Arp_wire.html">Arp_wire</a>]</td>
+<td></td></tr>
+<tr><td><a href="Arp_wire.html#VALset_arp_ptype">set_arp_ptype</a> [<a href="Arp_wire.html">Arp_wire</a>]</td>
+<td></td></tr>
+<tr><td><a href="Arp_wire.html#VALset_arp_sha">set_arp_sha</a> [<a href="Arp_wire.html">Arp_wire</a>]</td>
+<td></td></tr>
+<tr><td><a href="Arp_wire.html#VALset_arp_spa">set_arp_spa</a> [<a href="Arp_wire.html">Arp_wire</a>]</td>
+<td></td></tr>
+<tr><td><a href="Arp_wire.html#VALset_arp_tha">set_arp_tha</a> [<a href="Arp_wire.html">Arp_wire</a>]</td>
+<td></td></tr>
+<tr><td><a href="Arp_wire.html#VALset_arp_tpa">set_arp_tpa</a> [<a href="Arp_wire.html">Arp_wire</a>]</td>
+<td></td></tr>
+<tr><td><a href="Arp_wire.html#VALsizeof_arp">sizeof_arp</a> [<a href="Arp_wire.html">Arp_wire</a>]</td>
+<td></td></tr>
+<tr><td><a href="Arp_handler.html#VALstatic">static</a> [<a href="Arp_handler.html">Arp_handler</a>]</td>
+<td><div class="info">
+<code class="code">static t ip mac</code> is <code class="code">t', <span class="keyword">as</span></code>, where <code class="code">t'</code> is <code class="code">t</code> extended with a static ARP
+    entry using the given <code class="code">ip</code> and <code class="code">mac</code>.
+</div>
+</td></tr>
+<tr><td><a href="Arp_wire.html#VALstring_to_op">string_to_op</a> [<a href="Arp_wire.html">Arp_wire</a>]</td>
+<td></td></tr>
+<tr><td align="left"><br>T</td></tr>
+<tr><td><a href="Arp_handler.html#VALtick">tick</a> [<a href="Arp_handler.html">Arp_handler</a>]</td>
+<td><div class="info">
+<code class="code">tick t</code> is <code class="code">t', requests, timeouts</code>, which advances the state <code class="code">t</code> into
+    <code class="code">t'</code>.
+</div>
+</td></tr>
+</table>
+</body>
+</html>
