@@ -10,7 +10,10 @@ let distrib =
   Pkg.distrib ~exclude_paths ()
 
 let () =
-  Pkg.describe "arp" @@ fun c ->
+  let opams =
+    [ Pkg.opam_file "opam" ~lint_deps_excluding:(Some ["ppx_tools"]) ]
+  in
+  Pkg.describe ~opams "arp" @@ fun c ->
   let mirage = Conf.value c mirage in
   Ok [
     Pkg.mllib "src/arp.mllib";
