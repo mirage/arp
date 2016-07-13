@@ -2,7 +2,7 @@ opam-version: "1.2"
 maintainer: "Hannes Mehnert <hannes@mehnert.org>"
 authors: ["Hannes Mehnert <hannes@mehnert.org>"]
 homepage: "https://github.com/hannesm/arp"
-doc: "https://hannesm.github.io/arp"
+doc: "https://hannesm.github.io/arp/"
 dev-repo: "https://github.com/hannesm/arp.git"
 bug-reports: "https://github.com/hannesm/arp/issues"
 license: "ISC"

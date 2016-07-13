@@ -34,6 +34,8 @@
 
     While the {!Arp_packet} module is exposed, for normal operation it is not
     needed, but this module should be sufficient.
+
+    {e %%VERSION%% - {{:%%PKG_HOMEPAGE%% }homepage}}
 *)
 
 
