@@ -17,6 +17,6 @@ let () =
   let mirage = Conf.value c mirage in
   Ok [
     Pkg.mllib "src/arp.mllib";
-    Pkg.mllib ~cond:mirage "mirage/marp.mllib" ~dst_dir:"mirage/";
+    Pkg.mllib ~cond:mirage "mirage/arpv4.mllib" ~dst_dir:"mirage/";
     Pkg.test "test/tests"
   ]

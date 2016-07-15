@@ -117,8 +117,8 @@ end
 module B = Basic_backend.Make
 module V = Vnetif.Make(B)
 module E = Ethif.Make(V)
-(* module A = Marp.Make(E)(Fast_clock)(Fast_time) *)
-module A = Marp.Make(E)(Clock)(OS.Time)
+(* module A = Arpv4.Make(E)(Fast_clock)(Fast_time) *)
+module A = Arpv4.Make(E)(Clock)(OS.Time)
 
 let c = ref 0
 let gen arp () =

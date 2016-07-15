@@ -8,6 +8,6 @@ true : package(result), package(cstruct)
 <src/arp_packet.{ml,mli}>: package(ipaddr)
 <src/arp_handler.{ml,mli}>: package(ipaddr), package(logs)
 
-<mirage/marp.{ml,mli}>: package(mirage-types), package(lwt), package(ipaddr), package(logs), package(cstruct), package(tcpip.ethif)
+<mirage/arpv4.{ml,mli}>: package(mirage-types), package(lwt), package(ipaddr), package(logs), package(cstruct), package(tcpip.ethif)
 
 <test/tests.{ml,native}>: package(cstruct), package(nocrypto), package(alcotest), package(nocrypto.unix), package(ipaddr), package(logs)
