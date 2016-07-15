@@ -1,3 +1,4 @@
+open Result
 
 let rec gen_ip () =
   let buf = Nocrypto.Rng.generate 4 in
