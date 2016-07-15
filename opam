@@ -26,6 +26,10 @@ depopts: [
   "tcpip"
   "lwt"
 ]
+conflicts: [
+  "tcpip" {<= "2.8.0"}
+]
+
 build: [
   [ "ocaml" "pkg/pkg.ml" "build" "--pinned" "%{pinned}%"
     "--with-mirage" "%{mirage-types+tcpip+lwt:installed}%" ]
