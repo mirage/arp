@@ -13,7 +13,9 @@ Motivation for this implementation is [written up](https://hannes.nqsb.io/Posts/
 
 ## Documentation
 
-[API Documentation](https://hannesm.github.io/arp/doc/) is available online,
+[![Build Status](https://travis-ci.org/hannesm/arp.svg?branch=master)](https://travis-ci.org/hannesm/arp)
+
+[API documentation](https://hannesm.github.io/arp/doc/) is available online,
 also a test suite and a [coverage
 report](https://hannesm.github.io/arp/coverage/).
 
