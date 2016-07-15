@@ -10,4 +10,4 @@ true : package(result), package(cstruct)
 
 <mirage/arpv4.{ml,mli}>: package(mirage-types), package(lwt), package(ipaddr), package(logs), package(cstruct), package(tcpip.ethif)
 
-<test/tests.{ml,native}>: package(cstruct), package(nocrypto), package(alcotest), package(nocrypto.unix), package(ipaddr), package(logs)
+<test/tests.{ml,native,byte}>: package(cstruct), package(nocrypto), package(alcotest), package(nocrypto.unix), package(ipaddr), package(logs)
