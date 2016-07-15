@@ -3,7 +3,7 @@
 #require "topkg"
 open Topkg
 
-let mirage = Conf.with_pkg "mirage"
+let mirage = Conf.with_pkg ~default:false "mirage"
 
 let distrib =
   let exclude_paths () = Pkg.exclude_paths () >>| fun ps -> "bench" :: ps in
