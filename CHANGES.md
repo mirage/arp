@@ -1,3 +1,7 @@
+
+Fix testsuite compilation on OCaml 4.02
+Renamed `Marp` to `Arpv4` (same as MirageOS ARP handler in tcpip)
+
 0.1.1 2016-07-13
 ----------------
 
