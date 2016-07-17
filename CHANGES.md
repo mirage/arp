@@ -1,4 +1,5 @@
 
+* Don't ship with -warn-error +A, use it only in `./build`
 * Fix testsuite compilation on OCaml 4.02
 * Renamed `Marp` to `Arpv4` (same as MirageOS ARP handler in tcpip)
 

@@ -1,5 +1,4 @@
 true : annot, bin_annot, safe_string, principal, coverage
-true : warn_error(+1..49)
 true : warn(+A-4-6-44-48)
 true : package(result), package(cstruct)
 "src" : include

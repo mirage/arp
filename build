@@ -5,7 +5,7 @@
 set -e
 
 OCAMLBUILD=${OCAMLBUILD:="ocamlbuild -tag debug -classic-display \
-                          -use-ocamlfind" }
+                          -use-ocamlfind -cflags -warn-error,+A" }
 
 BENCH="-pkg mirage-vnetif -pkg lwt -pkg ipaddr -pkg tcpip.ethif -pkg mirage-unix -pkg mirage-clock-unix -pkg mirage-types -pkg nocrypto -pkg nocrypto.unix -pkg ipaddr -pkg lwt.unix"
 
