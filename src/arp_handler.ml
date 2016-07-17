@@ -72,12 +72,8 @@ let create ?(timeout = 1200) ?(retries = 5)
     invalid_arg "timeout must be strictly positive" ;
   if retries < 0 then
     invalid_arg "retries must be positive" ;
-  let t = {
-    cache = M.empty ; mac ; ip ;
-    timeout ; retries ; epoch = min_int ;
-    logsrc
-  }
-  in
+  let cache = M.empty in
+  let t = { cache ; mac ; ip ; timeout ; retries ; epoch = 0 ; logsrc } in
   let t, garp, _ = alias t ip in
   t, garp
 
