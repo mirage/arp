@@ -18,9 +18,9 @@ action ()
         test) action lib ; $OCAMLBUILD test/tests.native ; ./tests.native ;;
         coverage)
             action clean ;
-            export BISECT_COVERAGE="YES" ;
+            export OCAMLBUILD="$OCAMLBUILD -pkg bisect_ppx" ;
             action lib ;
-            $OCAMLBUILD -pkg bisect_ppx test/tests.native ;
+            $OCAMLBUILD test/tests.native ;
             ./tests.native ;
             bisect-ppx-report -I _build/ -html coverage/ bisect0001.out ;;
         bench) action lib ; action mirage ; $OCAMLBUILD $BENCH -I mirage bench/bench.native ;;
