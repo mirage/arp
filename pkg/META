@@ -9,7 +9,7 @@ plugin(native) = "arp.cmxs"
 package "mirage" (
   description = "Mirage ARP implementation"
   version = "%%VERSION_NUM%%"
-  requires = "mirage-types tcpip lwt arp"
+  requires = "mirage-types tcpip lwt duration arp"
   directory= "mirage"
   archive(byte) = "arpv4.cma"
   archive(native) = "arpv4.cmxa"
