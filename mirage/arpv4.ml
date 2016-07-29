@@ -37,7 +37,7 @@ module Make (Ethif : V1_LWT.ETHIF) (Clock : V1.CLOCK) (Time : V1_LWT.TIME) = str
   type id = t
   type error
 
-  let probe_repeat_delay = 1.5 (* per rfc5227, 2s >= probe_repeat_delay >= 1s *)
+  let probe_repeat_delay = Duration.of_ms 1500 (* per rfc5227, 2s >= probe_repeat_delay >= 1s *)
 
   let output t (buf, destination) =
     let ethif_packet = Ethif_packet.(Marshal.make_cstruct {
@@ -49,7 +49,7 @@ module Make (Ethif : V1_LWT.ETHIF) (Clock : V1.CLOCK) (Time : V1_LWT.TIME) = str
 
   let rec tick t () =
     if t.ticking then
-      Time.sleep probe_repeat_delay >>= fun () ->
+      Time.sleep_ns probe_repeat_delay >>= fun () ->
       let state, requests, timeouts = Arp_handler.tick t.state in
       t.state <- state ;
       Lwt_list.iter_p (output t) requests >>= fun () ->
