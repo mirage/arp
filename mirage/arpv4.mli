@@ -15,10 +15,10 @@
  *
  *)
 
-module Make (Ethif : V1_LWT.ETHIF) (Clock : V1.CLOCK) (Time : V1_LWT.TIME) : sig
+module Make (Ethif : V1_LWT.ETHIF) (Clock : V1.MCLOCK) (Time : V1_LWT.TIME) : sig
   include V1_LWT.ARP
 
   type ethif = Ethif.t
 
-  val connect : ethif -> [> `Ok of t | `Error of error ] Lwt.t
+  val connect : ethif -> Clock.t -> [> `Ok of t | `Error of error ] Lwt.t
 end

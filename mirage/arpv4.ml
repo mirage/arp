@@ -20,7 +20,7 @@ open Lwt.Infix
 
 let logsrc = Logs.Src.create "ARP" ~doc:"Mirage ARP handler"
 
-module Make (Ethif : V1_LWT.ETHIF) (Clock : V1.CLOCK) (Time : V1_LWT.TIME) = struct
+module Make (Ethif : V1_LWT.ETHIF) (Clock : V1.MCLOCK) (Time : V1_LWT.TIME) = struct
 
   type result = [ `Ok of Macaddr.t | `Timeout ]
   type 'a io = 'a Lwt.t
@@ -126,7 +126,7 @@ module Make (Ethif : V1_LWT.ETHIF) (Clock : V1.CLOCK) (Time : V1_LWT.TIME) = str
     | Arp_handler.Wait (t, _) -> t
     | Arp_handler.Mac m -> Lwt.return (`Ok m)
 
-  let connect ethif =
+  let connect ethif _ =
     let mac = Ethif.mac ethif in
     let state = init_empty mac in
     let t = { ethif; state; ticking = true} in
