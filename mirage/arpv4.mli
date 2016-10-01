@@ -20,5 +20,5 @@ module Make (Ethif : V1_LWT.ETHIF) (Clock : V1.MCLOCK) (Time : V1_LWT.TIME) : si
 
   type ethif = Ethif.t
 
-  val connect : ethif -> Clock.t -> [> `Ok of t | `Error of error ] Lwt.t
+  val connect : ethif -> Clock.t -> t Lwt.t
 end

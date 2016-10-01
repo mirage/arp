@@ -131,7 +131,7 @@ module Make (Ethif : V1_LWT.ETHIF) (Clock : V1.MCLOCK) (Time : V1_LWT.TIME) = st
     let state = init_empty mac in
     let t = { ethif; state; ticking = true} in
     Lwt.async (tick t);
-    Lwt.return (`Ok t)
+    Lwt.return t
 
   let disconnect t =
     t.ticking <- false ;
