@@ -34,7 +34,6 @@ module Make (Ethif : V1_LWT.ETHIF) (Clock : V1.MCLOCK) (Time : V1_LWT.TIME) = st
     ethif : ethif ;
     mutable ticking : bool ;
   }
-  type id = t
   type error
 
   let probe_repeat_delay = Duration.of_ms 1500 (* per rfc5227, 2s >= probe_repeat_delay >= 1s *)
