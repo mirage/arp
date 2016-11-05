@@ -68,57 +68,10 @@ let myreq =
 
 open Lwt.Infix
 
-let time_reduction_factor = 60.
-
-module Fast_clock = struct
-
-  let last_read = ref (Clock.time ())
-
-  (* from mirage/types/V1.mli module type CLOCK *)
-  type tm =
-    { tm_sec: int;               (** Seconds 0..60 *)
-      tm_min: int;               (** Minutes 0..59 *)
-      tm_hour: int;              (** Hours 0..23 *)
-      tm_mday: int;              (** Day of month 1..31 *)
-      tm_mon: int;               (** Month of year 0..11 *)
-      tm_year: int;              (** Year - 1900 *)
-      tm_wday: int;              (** Day of week (Sunday is 0) *)
-      tm_yday: int;              (** Day of year 0..365 *)
-      tm_isdst: bool;            (** Daylight time savings in effect *)
-    }
-
-  let gmtime time =
-    let tm = Clock.gmtime time in
-    {
-      tm_sec = tm.Clock.tm_sec;
-      tm_min = tm.Clock.tm_min;
-      tm_hour = tm.Clock.tm_hour;
-      tm_mday = tm.Clock.tm_mday;
-      tm_mon = tm.Clock.tm_mon;
-      tm_year = tm.Clock.tm_year;
-      tm_wday = tm.Clock.tm_wday;
-      tm_yday = tm.Clock.tm_yday;
-      tm_isdst = tm.Clock.tm_isdst;
-    }
-
-  let time () =
-    let this_time = Clock.time () in
-    let clock_diff = ((this_time -. !last_read) *. time_reduction_factor) in
-    last_read := this_time;
-    this_time +. clock_diff
-
-end
-
-module Fast_time = struct
-  type 'a io = 'a Lwt.t
-  let sleep time = OS.Time.sleep (time /. time_reduction_factor)
-end
-
 module B = Basic_backend.Make
 module V = Vnetif.Make(B)
 module E = Ethif.Make(V)
-(* module A = Arpv4.Make(E)(Fast_clock)(Fast_time) *)
-module A = Arpv4.Make(E)(Clock)(OS.Time)
+module A = Arpv4.Make(E)(Mclock)(OS.Time)
 
 let c = ref 0
 let gen arp () =
@@ -144,7 +97,7 @@ let rec query arp () =
   incr count2 ;
   let ip = gen_ip () in
   Lwt.async (fun () -> A.query arp ip) ;
-  OS.Time.sleep 0.0001 >>= fun () ->
+  OS.Time.sleep_ns (Duration.of_us 100) >>= fun () ->
   query arp ()
 
 type arp_stack = {
@@ -154,21 +107,18 @@ type arp_stack = {
   arp: A.t;
 }
 
-let or_error name fn t =
-  fn t >>= function
-  | `Error _ -> invalid_arg ("or_error starting " ^ name)
-  | `Ok t    -> Lwt.return t
-
 let get_arp ?(backend = B.create ~use_async_readers:true
                 ~yield:(fun() -> Lwt_main.yield ()) ()) () =
-  or_error "backend" V.connect backend >>= fun netif ->
-  or_error "ethif" E.connect netif >>= fun ethif ->
-  or_error "arp" A.connect ethif >>= fun arp ->
+  V.connect backend >>= fun netif ->
+  E.connect netif >>= fun ethif ->
+  Mclock.connect () >>= fun mclock ->
+  A.connect ethif mclock >>= fun arp ->
   Lwt.return { backend; netif; ethif; arp }
 
 let rec send netif gen () =
-  V.write netif (gen ()) >>= fun () ->
-  send netif gen ()
+  V.write netif (gen ()) >>= function
+  | Ok _ -> send netif gen ()
+  | Error _ -> Lwt.return_unit
 
 let runit () =
   Printf.printf "starting\n%!";
@@ -177,45 +127,45 @@ let runit () =
   A.set_ips stack.arp [ip] >>= fun () ->
   let count = ref 0 in
   Lwt.pick [
-    V.listen stack.netif (fun b -> incr count ; A.input stack.arp b);
+    (V.listen stack.netif (fun b -> incr count ; A.input stack.arp b) >|= fun _ -> ());
     send other.netif (fun () -> Nocrypto.Rng.generate 28) () ;
-    OS.Time.sleep 5.0
+    OS.Time.sleep_ns (Duration.of_sec 5)
   ] >>= fun () ->
   Printf.printf "%d random input\n%!" !count ;
   count := 0 ;
   Lwt.pick [
-    V.listen stack.netif (fun b -> incr count ; A.input stack.arp b);
+    (V.listen stack.netif (fun b -> incr count ; A.input stack.arp b) >|= fun _ -> ());
     send other.netif gen_arp () ;
-    OS.Time.sleep 5.0
+    OS.Time.sleep_ns (Duration.of_sec 5)
   ] >>= fun () ->
   Printf.printf "%d random ARP input\n%!" !count ;
   count := 0 ;
   Lwt.pick [
-    V.listen stack.netif (fun b -> incr count ; A.input stack.arp b);
+    (V.listen stack.netif (fun b -> incr count ; A.input stack.arp b) >|= fun _ -> ());
     send other.netif gen_req () ;
-    OS.Time.sleep 5.0
+    OS.Time.sleep_ns (Duration.of_sec 5)
   ] >>= fun () ->
   Printf.printf "%d requests\n%!" !count ;
   count := 0 ;
   Lwt.pick [
-    V.listen stack.netif (fun b -> incr count ; A.input stack.arp b);
+    (V.listen stack.netif (fun b -> incr count ; A.input stack.arp b) >|= fun _ -> ());
     send other.netif gen_rep () ;
-    OS.Time.sleep 5.0
+    OS.Time.sleep_ns (Duration.of_sec 5)
   ] >>= fun () ->
   Printf.printf "%d replies\n%!" !count ;
   count := 0 ;
   Lwt.pick [
-    V.listen stack.netif (fun b -> incr count ; A.input stack.arp b);
+    (V.listen stack.netif (fun b -> incr count ; A.input stack.arp b) >|= fun _ -> ());
     send other.netif (gen stack.arp) () ;
-    OS.Time.sleep 5.0
+    OS.Time.sleep_ns (Duration.of_sec 5)
   ] >>= fun () ->
   Printf.printf "%d mixed\n%!" !count ;
   count := 0 ;
   Lwt.pick [
-    V.listen stack.netif (fun b -> incr count ; A.input stack.arp b);
+    (V.listen stack.netif (fun b -> incr count ; A.input stack.arp b) >|= fun _ -> ());
     send other.netif gen_rep  () ;
     query stack.arp () ;
-    OS.Time.sleep 5.0
+    OS.Time.sleep_ns (Duration.of_sec 5)
   ] >|= fun () ->
   Printf.printf "%d queries (%d qs)\n%!" !count !count2
 

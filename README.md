@@ -25,9 +25,10 @@ report](https://hannesm.github.io/arp/coverage/).
 4.02.0) and opam (>= 1.2.2).
 
 The Mirage interface depends on changes in the not yet released tcpip library,
-in order to get the latest, you'll need to `opam pin add -k git --dev
-mirage-types && opam pin add -k git --dev tcpip`.
+in order to get the latest, you'll need to `opam repo add mirage-dev
+https://github.com/mirage/mirage-dev.git`.
 
 Benchmarks require more opam libraries, namely `mirage-vnetif mirage-clock-unix
-mirage-unix nocrypto`.  Use `./build bench` (and `./build mbench` for the same
-code using the ARPv4 implementation provided by `tcpip`).
+mirage-unix nocrypto`.  Use `./bench/build.sh` to build, it will produce a
+`bench.native`, which uses this implementation, and a `mbench.native` which uses
+the ARPv4 implementation of mirage-tcpip.
