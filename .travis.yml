@@ -3,9 +3,13 @@ install: wget https://raw.githubusercontent.com/ocaml/ocaml-ci-scripts/master/.t
 script: bash -ex .travis-opam.sh
 sudo: required
 env:
-  - PACKAGE="arp" OCAML_VERSION=4.02
-  - PACKAGE="arp" OCAML_VERSION=4.03
-  - PACKAGE="arp" OCAML_VERSION=4.02 EXTRA_REMOTES="https://github.com/mirage/mirage-dev.git" DEPOPTS="lwt tcpip mirage-types duration" TESTS=false
-  - PACKAGE="arp" OCAML_VERSION=4.03 EXTRA_REMOTES="https://github.com/mirage/mirage-dev.git" DEPOPTS="lwt tcpip mirage-types duration" TESTS=false
+  global:
+    - PACKAGE="arp"
+  matrix:
+    - OCAML_VERSION=4.02
+    - OCAML_VERSION=4.03
+    - OCAML_VERSION=4.04
+    - OCAML_VERSION=4.02 EXTRA_REMOTES="https://github.com/mirage/mirage-dev.git" DEPOPTS="lwt tcpip mirage-types duration" TESTS=false
+    - OCAML_VERSION=4.04 EXTRA_REMOTES="https://github.com/mirage/mirage-dev.git" DEPOPTS="lwt tcpip mirage-types duration" TESTS=false
 notifications:
   email: false
