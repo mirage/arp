@@ -22,19 +22,17 @@ let logsrc = Logs.Src.create "ARP" ~doc:"Mirage ARP handler"
 
 module Make (Ethif : V1_LWT.ETHIF) (Clock : V1.MCLOCK) (Time : V1_LWT.TIME) = struct
 
-  type result = [ `Ok of Macaddr.t | `Timeout ]
   type 'a io = 'a Lwt.t
   type ipaddr = Ipaddr.V4.t
   type macaddr = Macaddr.t
   type ethif = Ethif.t
   type buffer = Cstruct.t
-  type repr = (result Lwt.t * result Lwt.u) Arp_handler.t
+  type repr = ((macaddr, V1.Arp.error) result Lwt.t * (macaddr, V1.Arp.error) result Lwt.u) Arp_handler.t
   type t = {
     mutable state : repr ;
     ethif : ethif ;
     mutable ticking : bool ;
   }
-  type error
 
   let probe_repeat_delay = Duration.of_ms 1500 (* per rfc5227, 2s >= probe_repeat_delay >= 1s *)
 
@@ -44,7 +42,18 @@ module Make (Ethif : V1_LWT.ETHIF) (Clock : V1.MCLOCK) (Time : V1_LWT.TIME) = st
         destination;
         ethertype = Ethif_wire.ARP;
       }) in
-    Ethif.writev t.ethif [ethif_packet ; buf]
+    Ethif.writev t.ethif [ethif_packet ; buf] >|= function
+    | Ok () -> ()
+    | Error e ->
+      match Arp_packet.decode buf with
+      | Ok p ->
+        Logs.info ~src:logsrc
+          (fun m -> m "error %a while outputting packet %a to %s"
+              Mirage_pp.pp_ethif_error e Arp_packet.pp p (Macaddr.to_string destination))
+      | Error ae ->
+        Logs.info ~src:logsrc
+          (fun m -> m "error %a while outputing packet, and failing to parse our output %a"
+              Mirage_pp.pp_ethif_error e Arp_packet.pp_error ae)
 
   let rec tick t () =
     if t.ticking then
@@ -52,7 +61,7 @@ module Make (Ethif : V1_LWT.ETHIF) (Clock : V1.MCLOCK) (Time : V1_LWT.TIME) = st
       let state, requests, timeouts = Arp_handler.tick t.state in
       t.state <- state ;
       Lwt_list.iter_p (output t) requests >>= fun () ->
-      List.iter (fun (_, u) -> Lwt.wakeup u `Timeout) timeouts ;
+      List.iter (fun (_, u) -> Lwt.wakeup u (Error `Timeout)) timeouts ;
       tick t ()
     else
       Lwt.return_unit
@@ -69,7 +78,7 @@ module Make (Ethif : V1_LWT.ETHIF) (Clock : V1.MCLOCK) (Time : V1_LWT.TIME) = st
      | Some pkt -> output t pkt) >|= fun () ->
     match wake with
     | None -> ()
-    | Some (mac, (_, u)) -> Lwt.wakeup u (`Ok mac)
+    | Some (mac, (_, u)) -> Lwt.wakeup u (Ok mac)
 
   let get_ips t = [Arp_handler.ip t.state]
 
@@ -90,7 +99,7 @@ module Make (Ethif : V1_LWT.ETHIF) (Clock : V1.MCLOCK) (Time : V1_LWT.TIME) = st
       output t out >|= fun () ->
       match wake with
       | None -> ()
-      | Some (_, u) -> Lwt.wakeup u (`Ok (Ethif.mac t.ethif))
+      | Some (_, u) -> Lwt.wakeup u (Ok (Ethif.mac t.ethif))
 
   let init_empty mac =
     let state, _ =
@@ -123,7 +132,7 @@ module Make (Ethif : V1_LWT.ETHIF) (Clock : V1.MCLOCK) (Time : V1_LWT.TIME) = st
     match res with
     | Arp_handler.RequestWait (pkt, (tr, _)) -> output t pkt >>= fun () -> tr
     | Arp_handler.Wait (t, _) -> t
-    | Arp_handler.Mac m -> Lwt.return (`Ok m)
+    | Arp_handler.Mac m -> Lwt.return (Ok m)
 
   let connect ethif _ =
     let mac = Ethif.mac ethif in

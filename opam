@@ -22,15 +22,18 @@ depends: [
 ]
 
 depopts: [
-  "mirage-types"
+  "mirage-types-lwt"
   "tcpip"
   "lwt"
   "duration"
 ]
-#should conflict with tcpip <= 2.8.X and mirage-types < 3
+conflicts: [
+  "tcpip" {<"2.8.0"}
+  "mirage-types-lwt" {<"3.0.0"}
+]
 build: [
   [ "ocaml" "pkg/pkg.ml" "build" "--pinned" "%{pinned}%"
-    "--with-mirage" "%{mirage-types+tcpip+lwt+duration:installed}%" ]
+    "--with-mirage" "%{mirage-types-lwt+lwt+tcpip+duration:installed}%" ]
 ]
 
 build-test: [
