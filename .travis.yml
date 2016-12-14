@@ -9,7 +9,7 @@ env:
     - OCAML_VERSION=4.02
     - OCAML_VERSION=4.03
     - OCAML_VERSION=4.04
-    - OCAML_VERSION=4.02 EXTRA_REMOTES="https://github.com/mirage/mirage-dev.git" DEPOPTS="lwt tcpip mirage-types duration" TESTS=false
-    - OCAML_VERSION=4.04 EXTRA_REMOTES="https://github.com/mirage/mirage-dev.git" DEPOPTS="lwt tcpip mirage-types duration" TESTS=false
+    - OCAML_VERSION=4.03 EXTRA_REMOTES="https://github.com/mirage/mirage-dev.git" DEPOPTS="lwt tcpip mirage-types-lwt duration" TESTS=false
+    - OCAML_VERSION=4.04 EXTRA_REMOTES="https://github.com/mirage/mirage-dev.git" DEPOPTS="lwt tcpip mirage-types-lwt duration" TESTS=false
 notifications:
   email: false
