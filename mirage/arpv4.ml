@@ -25,14 +25,16 @@ module Make (Ethif : V1_LWT.ETHIF) (Clock : V1.MCLOCK) (Time : V1_LWT.TIME) = st
   type 'a io = 'a Lwt.t
   type ipaddr = Ipaddr.V4.t
   type macaddr = Macaddr.t
-  type ethif = Ethif.t
   type buffer = Cstruct.t
   type repr = ((macaddr, V1.Arp.error) result Lwt.t * (macaddr, V1.Arp.error) result Lwt.u) Arp_handler.t
+  type error = V1.Arp.error
   type t = {
     mutable state : repr ;
-    ethif : ethif ;
+    ethif : Ethif.t ;
     mutable ticking : bool ;
   }
+
+  let pp_error = Mirage_pp.pp_arp_error
 
   let probe_repeat_delay = Duration.of_ms 1500 (* per rfc5227, 2s >= probe_repeat_delay >= 1s *)
 
@@ -47,13 +49,13 @@ module Make (Ethif : V1_LWT.ETHIF) (Clock : V1.MCLOCK) (Time : V1_LWT.TIME) = st
     | Error e ->
       match Arp_packet.decode buf with
       | Ok p ->
-        Logs.info ~src:logsrc
+        Logs.warn ~src:logsrc
           (fun m -> m "error %a while outputting packet %a to %s"
-              Mirage_pp.pp_ethif_error e Arp_packet.pp p (Macaddr.to_string destination))
+              Ethif.pp_error e Arp_packet.pp p (Macaddr.to_string destination))
       | Error ae ->
-        Logs.info ~src:logsrc
+        Logs.warn ~src:logsrc
           (fun m -> m "error %a while outputing packet, and failing to parse our output %a"
-              Mirage_pp.pp_ethif_error e Arp_packet.pp_error ae)
+              Ethif.pp_error e Arp_packet.pp_error ae)
 
   let rec tick t () =
     if t.ticking then

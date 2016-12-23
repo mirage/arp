@@ -18,7 +18,5 @@
 module Make (Ethif : V1_LWT.ETHIF) (Clock : V1.MCLOCK) (Time : V1_LWT.TIME) : sig
   include V1_LWT.ARP
 
-  type ethif = Ethif.t
-
-  val connect : ethif -> Clock.t -> t Lwt.t
+  val connect : Ethif.t -> Clock.t -> t Lwt.t
 end
