@@ -46,7 +46,7 @@ type 'a t
 (** {2 Constructor} *)
 
 (** [create ~timeout ~retries mac ip)] is [t, garp].  The constructor of
-    the ARP handler, specifying timeouts (defaults to 1200) and amount of
+    the ARP handler, specifying timeouts (defaults to 800) and amount of
     retries (defaults to 5).  For the given IPv4 address a gratuitous ARP
     request will be encoded in [garp].  The value of [timeout] is the number of
     [Tick] events.

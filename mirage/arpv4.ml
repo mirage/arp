@@ -87,7 +87,7 @@ module Make (Ethif : V1_LWT.ETHIF) (Clock : V1.MCLOCK) (Time : V1_LWT.TIME) = st
   let create t ip =
     let mac = Ethif.mac t.ethif in
     let state, out =
-      Arp_handler.create ~retries:2 ~timeout:40 ~logsrc mac ip
+      Arp_handler.create ~logsrc mac ip
     in
     t.state <- state ;
     output t out
@@ -105,7 +105,7 @@ module Make (Ethif : V1_LWT.ETHIF) (Clock : V1.MCLOCK) (Time : V1_LWT.TIME) = st
 
   let init_empty mac =
     let state, _ =
-      Arp_handler.create ~retries:2 ~timeout:40 ~logsrc mac Ipaddr.V4.any
+      Arp_handler.create ~logsrc mac Ipaddr.V4.any
     in
     state
 

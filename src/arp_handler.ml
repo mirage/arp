@@ -65,7 +65,7 @@ let alias t ip =
   (Arp_packet.encode garp, Macaddr.broadcast),
   pending t ip
 
-let create ?(timeout = 1200) ?(retries = 5)
+let create ?(timeout = 800) ?(retries = 5)
     ?(logsrc = Logs.Src.create "arp" ~doc:"ARP handler")
     mac ip =
   if timeout <= 0 then
@@ -205,7 +205,7 @@ let input t buf =
   match decode buf with
   | Error e ->
     (*BISECT-IGNORE-BEGIN*)
-    Logs.debug ~src:t.logsrc
+    Logs.info ~src:t.logsrc
         (fun pp -> pp "Failed to parse ARP frame %a" Arp_packet.pp_error e) ;
     (*BISECT-IGNORE-END*)
     t, None, None
