@@ -20,14 +20,14 @@ open Lwt.Infix
 
 let logsrc = Logs.Src.create "ARP" ~doc:"Mirage ARP handler"
 
-module Make (Ethif : V1_LWT.ETHIF) (Clock : V1.MCLOCK) (Time : V1_LWT.TIME) = struct
+module Make (Ethif : Mirage_types_lwt.ETHIF) (Clock : Mirage_types.MCLOCK) (Time : Mirage_types_lwt.TIME) = struct
 
   type 'a io = 'a Lwt.t
   type ipaddr = Ipaddr.V4.t
   type macaddr = Macaddr.t
   type buffer = Cstruct.t
-  type repr = ((macaddr, V1.Arp.error) result Lwt.t * (macaddr, V1.Arp.error) result Lwt.u) Arp_handler.t
-  type error = V1.Arp.error
+  type repr = ((macaddr, Mirage_types.Arp.error) result Lwt.t * (macaddr, Mirage_types.Arp.error) result Lwt.u) Arp_handler.t
+  type error = Mirage_types.Arp.error
   type t = {
     mutable state : repr ;
     ethif : Ethif.t ;
