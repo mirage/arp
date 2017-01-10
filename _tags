@@ -6,6 +6,6 @@ true : package(result cstruct ipaddr)
 <src/arp_wire.{ml,mli}>: package(cstruct.ppx)
 <src/arp_handler.{ml,mli}>: package(logs)
 
-<mirage/arp.{ml,mli}>: package(mirage-types mirage-types-lwt mirage-protocols lwt logs tcpip.ethif duration)
+<mirage/arp.{ml,mli}>: package(mirage-protocols mirage-protocols-lwt mirage-clock mirage-time-lwt lwt logs tcpip.ethif duration)
 
 <test/tests.{ml,native,byte}>: package(nocrypto alcotest nocrypto.unix logs)

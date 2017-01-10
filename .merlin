@@ -17,10 +17,13 @@ PKG result
 PKG nocrypto
 PKG alcotest
 
-PKG mirage-types
 PKG lwt
 PKG tcpip.ethif
 PKG mirage-clock-unix
 PKG mirage-unix
 PKG mirage-vnetif
 PKG arp.mirage
+PKG mirage-protocols-lwt
+PKG mirage-protocols
+PKG mirage-time-lwt
+PKG mirage-clock

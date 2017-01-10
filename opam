@@ -22,7 +22,9 @@ depends: [
 ]
 
 depopts: [
-  "mirage-types-lwt"
+  "mirage-protocols-lwt"
+  "mirage-time-lwt"
+  "mirage-clock"
   "mirage-protocols"
   "tcpip"
   "lwt"
@@ -34,7 +36,7 @@ conflicts: [
 ]
 build: [
   [ "ocaml" "pkg/pkg.ml" "build" "--pinned" "%{pinned}%"
-    "--with-mirage" "%{mirage-types-lwt+mirage-protocols+lwt+tcpip+duration:installed}%" ]
+    "--with-mirage" "%{mirage-protocols+mirage-protocols-lwt+mirage-time-lwt+mirage-clock+lwt+tcpip+duration:installed}%" ]
 ]
 
 build-test: [

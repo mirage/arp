@@ -20,7 +20,7 @@ open Lwt.Infix
 
 let logsrc = Logs.Src.create "ARP" ~doc:"Mirage ARP handler"
 
-module Make (Ethif : V1_LWT.ETHIF) (Clock : V1.MCLOCK) (Time : V1_LWT.TIME) = struct
+module Make (Ethif : Mirage_protocols_lwt.ETHIF) (Clock : Mirage_clock.MCLOCK) (Time : Mirage_time_lwt.S) = struct
 
   type 'a io = 'a Lwt.t
   type ipaddr = Ipaddr.V4.t
