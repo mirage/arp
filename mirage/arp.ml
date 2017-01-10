@@ -26,15 +26,16 @@ module Make (Ethif : V1_LWT.ETHIF) (Clock : V1.MCLOCK) (Time : V1_LWT.TIME) = st
   type ipaddr = Ipaddr.V4.t
   type macaddr = Macaddr.t
   type buffer = Cstruct.t
-  type repr = ((macaddr, V1.Arp.error) result Lwt.t * (macaddr, V1.Arp.error) result Lwt.u) Arp_handler.t
-  type error = V1.Arp.error
+  type repr = ((macaddr, Mirage_protocols.Arp.error) result Lwt.t *
+               (macaddr, Mirage_protocols.Arp.error) result Lwt.u) Arp_handler.t
+  type error = Mirage_protocols.Arp.error
   type t = {
     mutable state : repr ;
     ethif : Ethif.t ;
     mutable ticking : bool ;
   }
 
-  let pp_error = Mirage_pp.pp_arp_error
+  let pp_error = Mirage_protocols.Arp.pp_error
 
   let probe_repeat_delay = Duration.of_ms 1500 (* per rfc5227, 2s >= probe_repeat_delay >= 1s *)
 
