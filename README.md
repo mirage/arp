@@ -1,3 +1,4 @@
+
 ## ARP - Address Resolution Protocol purely in OCaml
 
 %%VERSION%%
@@ -6,7 +7,7 @@ ARP is an implementation of the address resolution protocol purely in OCaml.  It
 handles IPv4 protocol addresses and Ethernet hardware addresses only.
 
 A MirageOS
-[V1.ARP](https://github.com/mirage/mirage/blob/v2.9.0/types/V1.mli#L471)
+[Mirage_protocols.ARP](https://github.com/mirage/mirage-protocols/blob/4776d2ab1d8c5b1bfd69d46583779c2caef7b5e8/src/mirage_protocols.mli#L169)
 implementation (using Lwt) is in the `mirage` subdirectory.
 
 Motivation for this implementation is [written up](https://hannes.nqsb.io/Posts/ARP).
