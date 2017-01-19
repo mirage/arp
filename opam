@@ -35,7 +35,7 @@ conflicts: [
   "mirage-types-lwt" {<"3.0.0"}
 ]
 build: [
-  [ "ocaml" "pkg/pkg.ml" "build" "--pinned" "%{pinned}%"
+  [ "ocaml" "pkg/pkg.ml" "build" "--pinned" "%{pinned}%" "--tests" "false"
     "--with-mirage" "%{mirage-protocols+mirage-protocols-lwt+mirage-time-lwt+mirage-clock+lwt+tcpip+duration:installed}%" ]
 ]
 
