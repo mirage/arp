@@ -13,6 +13,7 @@ depends: [
   "ocamlbuild" {build}
   "topkg" {build}
   "ppx_tools" {build}
+  "ppx_cstruct" {build}
   "result"
   "cstruct" {>= "2.2.0"}
   "ipaddr" {>= "2.2.0"}
@@ -40,7 +41,8 @@ build: [
 ]
 
 build-test: [
-  [ "ocaml" "pkg/pkg.ml" "build" "--pinned" "%{pinned}%" "--tests" "true" ]
+  [ "ocaml" "pkg/pkg.ml" "build" "--pinned" "%{pinned}%" "--tests" "true"
+    "--with-mirage" "%{mirage-protocols+mirage-protocols-lwt+mirage-time-lwt+mirage-clock+lwt+tcpip+duration:installed}%" ]
   [ "ocaml" "pkg/pkg.ml" "test" ]
 ]
 
