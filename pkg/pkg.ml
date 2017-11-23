@@ -22,10 +22,7 @@ let cmd c os files =
   OS.Cmd.run @@ Cmd.(build c os %% of_list files)
 
 let () =
-  let opams =
-    [ Pkg.opam_file "opam" ~lint_deps_excluding:(Some ["ppx_tools"]) ]
-  in
-  Pkg.describe ~build:(Pkg.build ~cmd ()) ~opams "arp" @@ fun c ->
+  Pkg.describe ~build:(Pkg.build ~cmd ()) "arp" @@ fun c ->
   let mirage = Conf.value c mirage in
   Ok [
     Pkg.mllib "src/arp.mllib";

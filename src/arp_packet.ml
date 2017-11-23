@@ -33,13 +33,7 @@ and ipv4_size = 4
 and ether_htype = 1
 and ether_size = 6
 
-open Result
-
-let guard p e =
-  if p then
-    Ok ()
-  else
-    Error e
+let guard p e = if p then Ok () else Error e
 
 let (>>=) x f = match x with
   | Ok y -> f y

@@ -34,7 +34,7 @@ val pp_error : Format.formatter -> error -> unit
 (** {2 Decoding} *)
 
 (** [decode buf] attempts to decode the buffer into an ARP frame [t]. *)
-val decode : Cstruct.t -> (t, error) Result.result
+val decode : Cstruct.t -> (t, error) result
 
 (** {2 Encoding} *)
 
