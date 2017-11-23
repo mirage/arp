@@ -1,5 +1,3 @@
-open Result
-
 let rec gen_ip () =
   let buf = Nocrypto.Rng.generate 4 in
   let ip = Ipaddr.V4.of_bytes_exn (Cstruct.to_string buf) in
