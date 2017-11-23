@@ -12,7 +12,6 @@ PKG logs
 PKG ipaddr
 PKG cstruct
 PKG cstruct.ppx
-PKG result
 
 PKG nocrypto
 PKG alcotest
