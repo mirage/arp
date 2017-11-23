@@ -6,7 +6,7 @@ doc: "https://hannesm.github.io/arp/doc"
 dev-repo: "https://github.com/hannesm/arp.git"
 bug-reports: "https://github.com/hannesm/arp/issues"
 license: "ISC"
-available: [ ocaml-version >= "4.03.0"]
+available: [ ocaml-version >= "4.04.2"]
 
 depends: [
   "ocamlfind" {build}

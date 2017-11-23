@@ -201,7 +201,6 @@ let handle_request t arp =
 
 let input t buf =
   let open Arp_packet in
-  let open Result in
   match decode buf with
   | Error e ->
     (*BISECT-IGNORE-BEGIN*)
