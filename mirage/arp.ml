@@ -85,19 +85,19 @@ module Make (Ethif : Mirage_protocols_lwt.ETHIF) (Clock : Mirage_clock.MCLOCK) (
 
   let get_ips t = [Arp_handler.ip t.state]
 
-  let create t ip =
+  let create ?ipaddr t =
     let mac = Ethif.mac t.ethif in
-    let state, out =
-      Arp_handler.create ~logsrc mac ip
-    in
+    let state, out = Arp_handler.create ~logsrc ?ipaddr mac in
     t.state <- state ;
-    output t out
+    match out with
+    | None -> Lwt.return_unit
+    | Some x -> output t x
 
-  let add_ip t ip =
+  let add_ip t ipaddr =
     if Ipaddr.V4.compare (Arp_handler.ip t.state) Ipaddr.V4.any = 0 then
-      create t ip
+      create ~ipaddr t
     else
-      let state, out, wake = Arp_handler.alias t.state ip in
+      let state, out, wake = Arp_handler.alias t.state ipaddr in
       t.state <- state ;
       output t out >|= fun () ->
       match wake with
@@ -105,9 +105,7 @@ module Make (Ethif : Mirage_protocols_lwt.ETHIF) (Clock : Mirage_clock.MCLOCK) (
       | Some (_, u) -> Lwt.wakeup u (Ok (Ethif.mac t.ethif))
 
   let init_empty mac =
-    let state, _ =
-      Arp_handler.create ~logsrc mac Ipaddr.V4.any
-    in
+    let state, _ = Arp_handler.create ~logsrc mac in
     state
 
   let set_ips t = function
@@ -116,8 +114,8 @@ module Make (Ethif : Mirage_protocols_lwt.ETHIF) (Clock : Mirage_clock.MCLOCK) (
       let state = init_empty mac in
       t.state <- state ;
       Lwt.return_unit
-    | ip::xs ->
-      create t ip >>= fun () ->
+    | ipaddr::xs ->
+      create ~ipaddr t >>= fun () ->
       Lwt_list.iter_s (add_ip t) xs
 
   let remove_ip t ip =

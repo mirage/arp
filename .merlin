@@ -21,7 +21,6 @@ PKG tcpip.ethif
 PKG mirage-clock-unix
 PKG mirage-unix
 PKG mirage-vnetif
-PKG arp.mirage
 PKG mirage-protocols-lwt
 PKG mirage-protocols
 PKG mirage-time-lwt

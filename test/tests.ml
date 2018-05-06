@@ -210,23 +210,26 @@ module Handling = struct
     (module M : Alcotest.TESTABLE with type t = M.t)
 
   let create_raises () =
-    let mac = gen_mac ()
-    and ip = gen_ip ()
-    in
+    let mac = gen_mac () in
     Alcotest.check_raises "timeout <= 0" (Invalid_argument "timeout must be strictly positive")
-      (fun () -> ignore(Arp_handler.create ~timeout:0 mac ip)) ;
+      (fun () -> ignore(Arp_handler.create ~timeout:0 mac)) ;
     Alcotest.check_raises "retries < 0" (Invalid_argument "retries must be positive")
-      (fun () -> ignore(Arp_handler.create ~retries:(-1) mac ip))
+      (fun () -> ignore(Arp_handler.create ~retries:(-1) mac))
 
   let basic_good () =
     let mac = gen_mac ()
-    and ip = gen_ip ()
+    and ipaddr = gen_ip ()
     in
-    let t, garp = Arp_handler.create mac ip in
+    let t, garp = Arp_handler.create ~ipaddr mac in
+    let garp = match garp with
+      | None -> Alcotest.fail "expected some garp"
+      | Some garp -> garp
+    in
     Alcotest.(check bool "create has good GARP" true
-                (Cstruct.equal (Arp_packet.encode (garp_of ip mac)) (fst garp))) ;
-    Alcotest.(check i "ip is sensible" ip (Arp_handler.ip t)) ;
-    Alcotest.(check (option m) "own entry is in cache" (Some mac) (Arp_handler.in_cache t ip)) ;
+                (Cstruct.equal (Arp_packet.encode (garp_of ipaddr mac)) (fst garp))) ;
+    Alcotest.(check i "ip is sensible" ipaddr (Arp_handler.ip t)) ;
+    Alcotest.(check (option m) "own entry is in cache"
+                (Some mac) (Arp_handler.in_cache t ipaddr)) ;
     Alcotest.(check (option m) "any is not in cache" None
                 (Arp_handler.in_cache t Ipaddr.V4.any)) ;
     Alcotest.(check (option m) "broadcast is not in cache" None
@@ -234,52 +237,55 @@ module Handling = struct
 
   let remove_good () =
     let mac = gen_mac ()
-    and ip = gen_ip ()
+    and ipaddr = gen_ip ()
     in
-    let t, _garp = Arp_handler.create mac ip in
-    Alcotest.(check i "ip is sensible" ip (Arp_handler.ip t)) ;
-    Alcotest.(check (option m) "own entry is in cache" (Some mac) (Arp_handler.in_cache t ip)) ;
-    let t = Arp_handler.remove t ip in
+    let t, _garp = Arp_handler.create ~ipaddr mac in
+    Alcotest.(check i "ip is sensible" ipaddr (Arp_handler.ip t)) ;
+    Alcotest.(check (option m) "own entry is in cache"
+                (Some mac) (Arp_handler.in_cache t ipaddr)) ;
+    let t = Arp_handler.remove t ipaddr in
     Alcotest.(check (option m) "own entry is no longer in cache" None
-                (Arp_handler.in_cache t ip))
+                (Arp_handler.in_cache t ipaddr))
 
   let remove_no () =
     let mac = gen_mac ()
-    and ip = gen_ip ()
+    and ipaddr = gen_ip ()
     in
-    let t, _garp = Arp_handler.create mac ip in
-    Alcotest.(check i "ip is sensible" ip (Arp_handler.ip t)) ;
-    Alcotest.(check (option m) "own entry is in cache" (Some mac) (Arp_handler.in_cache t ip)) ;
+    let t, _garp = Arp_handler.create ~ipaddr mac in
+    Alcotest.(check i "ip is sensible" ipaddr (Arp_handler.ip t)) ;
+    Alcotest.(check (option m) "own entry is in cache"
+                (Some mac) (Arp_handler.in_cache t ipaddr)) ;
     let t = Arp_handler.remove t Ipaddr.V4.any in
     Alcotest.(check (option m) "own entry is still in cache" (Some mac)
-                (Arp_handler.in_cache t ip))
+                (Arp_handler.in_cache t ipaddr))
 
   let alias_good () =
     let mac = gen_mac ()
-    and ip = gen_ip ()
+    and ipaddr = gen_ip ()
     in
-    let t, _garp = Arp_handler.create mac ip in
-    Alcotest.(check i "ip is sensible" ip (Arp_handler.ip t)) ;
-    Alcotest.(check (option m) "own entry is in cache" (Some mac) (Arp_handler.in_cache t ip)) ;
-    let t, _, _ = Arp_handler.alias t ip in
+    let t, _garp = Arp_handler.create ~ipaddr mac in
+    Alcotest.(check i "ip is sensible" ipaddr (Arp_handler.ip t)) ;
+    Alcotest.(check (option m) "own entry is in cache"
+                (Some mac) (Arp_handler.in_cache t ipaddr)) ;
+    let t, _, _ = Arp_handler.alias t ipaddr in
     Alcotest.(check (option m) "own entry is still in cache" (Some mac)
-                (Arp_handler.in_cache t ip)) ;
+                (Arp_handler.in_cache t ipaddr)) ;
     let ip' = gen_ip () in
     let t, _, _ = Arp_handler.alias t ip' in
     Alcotest.(check (option m) "own entry is still in cache" (Some mac)
-                (Arp_handler.in_cache t ip)) ;
+                (Arp_handler.in_cache t ipaddr)) ;
     Alcotest.(check (option m) "aliased entry is in cache" (Some mac)
                 (Arp_handler.in_cache t ip'))
 
   let alias_remove_inverse () =
     let mac = gen_mac ()
-    and ip = gen_ip ()
+    and ipaddr = gen_ip ()
     in
-    let t, _garp = Arp_handler.create mac ip in
+    let t, _garp = Arp_handler.create ~ipaddr mac in
     let ip' = gen_ip () in
     let t, _, _ = Arp_handler.alias t ip' in
     Alcotest.(check (option m) "own entry is in cache" (Some mac)
-                (Arp_handler.in_cache t ip)) ;
+                (Arp_handler.in_cache t ipaddr)) ;
     Alcotest.(check (option m) "aliased entry is in cache" (Some mac)
                 (Arp_handler.in_cache t ip')) ;
     let t = Arp_handler.remove t ip' in
@@ -288,14 +294,14 @@ module Handling = struct
 
   let static_good () =
     let mac = gen_mac ()
-    and ip = gen_ip ()
+    and ipaddr = gen_ip ()
     in
-    let t, _garp = Arp_handler.create mac ip in
+    let t, _garp = Arp_handler.create ~ipaddr mac in
     let ip' = gen_ip () in
     let mac' = gen_mac () in
     let t, _ = Arp_handler.static t ip' mac' in
     Alcotest.(check (option m) "own entry is in cache" (Some mac)
-                (Arp_handler.in_cache t ip)) ;
+                (Arp_handler.in_cache t ipaddr)) ;
     Alcotest.(check (option m) "static entry is in cache" (Some mac')
                 (Arp_handler.in_cache t ip')) ;
     let t = Arp_handler.remove t ip' in
@@ -304,14 +310,14 @@ module Handling = struct
 
   let static_alias_good () =
     let mac = gen_mac ()
-    and ip = gen_ip ()
+    and ipaddr = gen_ip ()
     in
-    let t, _garp = Arp_handler.create mac ip in
+    let t, _garp = Arp_handler.create ~ipaddr mac in
     let ip' = gen_ip () in
     let mac' = gen_mac () in
     let t, _ = Arp_handler.static t ip' mac' in
     Alcotest.(check (option m) "own entry is in cache" (Some mac)
-                (Arp_handler.in_cache t ip)) ;
+                (Arp_handler.in_cache t ipaddr)) ;
     Alcotest.(check (option m) "static entry is in cache" (Some mac')
                 (Arp_handler.in_cache t ip')) ;
     let t, _, _ = Arp_handler.alias t ip' in
@@ -326,9 +332,9 @@ module Handling = struct
 
   let more_good () =
     let mac = gen_mac ()
-    and ip = gen_ip ()
+    and ipaddr = gen_ip ()
     in
-    let t, _garp = Arp_handler.create mac ip in
+    let t, _garp = Arp_handler.create ~ipaddr mac in
     let rec more_entries acc t = function
       | 0 -> acc, t
       | n ->
@@ -347,7 +353,7 @@ module Handling = struct
           in
           more_entries (e::acc) t (pred n)
     in
-    let acc, t = more_entries [(ip,mac)] t 100 in
+    let acc, t = more_entries [(ipaddr,mac)] t 100 in
     List.iter (fun (ip, mac) ->
         Alcotest.(check (option m) "entry is in cache" (Some mac)
                     (Arp_handler.in_cache t ip)))
@@ -359,7 +365,7 @@ module Handling = struct
       acc ;
     let t = List.fold_left (fun t (ip, _) -> Arp_handler.remove t ip) t acc in
     Alcotest.(check (option m) "own entry is no longer in cache" None
-                (Arp_handler.in_cache t ip))
+                (Arp_handler.in_cache t ipaddr))
 
   let out =
     let module M = struct
@@ -403,10 +409,10 @@ module Handling = struct
 
   let handle_good () =
     let mac = gen_mac ()
-    and ip = gen_ip ()
+    and ipaddr = gen_ip ()
     in
-    let t, _garp = Arp_handler.create mac ip in
-    let _t, res = Arp_handler.query t ip (merge 1) in
+    let t, _garp = Arp_handler.create ~ipaddr mac in
+    let _t, res = Arp_handler.query t ipaddr (merge 1) in
     Alcotest.check qres "own IP can be queried" (Arp_handler.Mac mac) res
 
   let query source_mac source_ip target_ip =
@@ -417,34 +423,34 @@ module Handling = struct
 
   let handle_gen_request () =
     let mac = gen_mac ()
-    and ip = gen_ip ()
+    and ipaddr = gen_ip ()
     in
-    let t, _garp = Arp_handler.create ~retries:1 mac ip in
+    let t, _garp = Arp_handler.create ~retries:1 ~ipaddr mac in
     let other = gen_ip () in
     let _, res = Arp_handler.query t other (merge 1) in
-    let out = query mac ip other in
+    let out = query mac ipaddr other in
     Alcotest.check qres "res is requestwait" (Arp_handler.RequestWait (out, [1])) res
 
   let handle_gen_request_twice () =
     let mac = gen_mac ()
-    and ip = gen_ip ()
+    and ipaddr = gen_ip ()
     in
-    let t, _garp = Arp_handler.create ~retries:1 mac ip in
+    let t, _garp = Arp_handler.create ~ipaddr ~retries:1 mac in
     let other = gen_ip () in
     let t, res = Arp_handler.query t other (merge 1) in
-    let out = query mac ip other in
+    let out = query mac ipaddr other in
     Alcotest.check qres "res is requestwait" (Arp_handler.RequestWait (out, [1])) res ;
     let _, res = Arp_handler.query t other (merge 2) in
     Alcotest.check qres "res is wait" (Arp_handler.Wait [2;1]) res
 
   let alias_wakes () =
     let mac = gen_mac ()
-    and ip = gen_ip ()
+    and ipaddr = gen_ip ()
     in
-    let t, _garp = Arp_handler.create mac ip in
+    let t, _garp = Arp_handler.create ~ipaddr mac in
     let other = gen_ip () in
     let t, res = Arp_handler.query t other (merge 1) in
-    let out = query mac ip other in
+    let out = query mac ipaddr other in
     Alcotest.check qres "res is requestwait!" (Arp_handler.RequestWait (out, [1])) res ;
     Alcotest.(check (option m) "query is not cache" None (Arp_handler.in_cache t other)) ;
     let _, _, a = Arp_handler.alias t other in
@@ -452,21 +458,21 @@ module Handling = struct
 
   let static_wakes () =
     let mac = gen_mac ()
-    and ip = gen_ip ()
+    and ipaddr = gen_ip ()
     in
-    let t, _garp = Arp_handler.create mac ip in
+    let t, _garp = Arp_handler.create ~ipaddr mac in
     let other = gen_ip () in
     let t, res = Arp_handler.query t other (merge 1) in
-    let out = query mac ip other in
+    let out = query mac ipaddr other in
     Alcotest.check qres "res is requestwait" (Arp_handler.RequestWait (out, [1])) res ;
     let _, a = Arp_handler.static t other mac in
     Alcotest.(check (option (list int)) "alias wakes up" (Some [1]) a)
 
   let handle_timeout () =
     let mac = gen_mac ()
-    and ip = gen_ip ()
+    and ipaddr = gen_ip ()
     in
-    let t, _garp = Arp_handler.create ~retries:1 mac ip in
+    let t, _garp = Arp_handler.create ~retries:1 ~ipaddr mac in
     let other = gen_ip () in
     let t, _ = Arp_handler.query t other (merge 1) in
     let t, _, a = Arp_handler.tick t in
@@ -476,16 +482,16 @@ module Handling = struct
 
   let req_before_timeout () =
     let mac = gen_mac ()
-    and ip = gen_ip ()
+    and ipaddr = gen_ip ()
     in
-    let t, _garp = Arp_handler.create ~timeout:1 mac ip in
+    let t, _garp = Arp_handler.create ~timeout:1 ~ipaddr mac in
     let other = gen_ip () in
     let t, _ = Arp_handler.query t other (merge 1) in
     let omac = gen_mac () in
     let pkt =
       Arp_packet.encode { Arp_packet.operation = Arp_wire.Reply ;
                           source_ip = other ; source_mac = omac ;
-                          target_ip = ip ; target_mac = mac }
+                          target_ip = ipaddr ; target_mac = mac }
     in
     let t, outp, wake = Arp_handler.input t pkt in
     Alcotest.(check (option out) "out is none" None outp) ;
@@ -493,16 +499,16 @@ module Handling = struct
                 (Some (omac, [1])) wake) ;
     let _, outp, rs = Arp_handler.tick t in
     Alcotest.(check bool "timeouts are empty" true (rs = [])) ;
-    Alcotest.(check (list out) "arp request is sent" [query mac ip other] outp)
+    Alcotest.(check (list out) "arp request is sent" [query mac ipaddr other] outp)
 
   let multiple_reqs () =
     let mac = gen_mac ()
-    and ip = gen_ip ()
+    and ipaddr = gen_ip ()
     in
-    let t, _garp = Arp_handler.create ~retries:1 mac ip in
+    let t, _garp = Arp_handler.create ~retries:1 ~ipaddr mac in
     let other = gen_ip () in
     let t, res = Arp_handler.query t other (merge 1) in
-    let q = query mac ip other in
+    let q = query mac ipaddr other in
     Alcotest.check qres "query generates ARP request" (Arp_handler.RequestWait (q, [1])) res ;
     let t, outs, touts = Arp_handler.tick t in
     Alcotest.(check (list out) "tick generates second ARP request" [q] outs) ;
@@ -513,12 +519,12 @@ module Handling = struct
 
   let multiple_reqs_2 () =
     let mac = gen_mac ()
-    and ip = gen_ip ()
+    and ipaddr = gen_ip ()
     in
-    let t, _garp = Arp_handler.create ~retries:4 mac ip in
+    let t, _garp = Arp_handler.create ~retries:4 ~ipaddr mac in
     let other = gen_ip () in
     let t, res = Arp_handler.query t other (merge 1) in
-    let q = query mac ip other in
+    let q = query mac ipaddr other in
     Alcotest.check qres "query generates ARP request" (Arp_handler.RequestWait (q, [1])) res ;
     let t, outs, touts = Arp_handler.tick t in
     Alcotest.(check (list out) "tick generates second ARP request" [q] outs) ;
@@ -538,15 +544,15 @@ module Handling = struct
 
   let handle_reply () =
     let mac = gen_mac ()
-    and ip = gen_ip ()
+    and ipaddr = gen_ip ()
     in
-    let t, _garp = Arp_handler.create ~timeout:1 mac ip in
+    let t, _garp = Arp_handler.create ~timeout:1 ~ipaddr mac in
     let other = gen_ip () in
     let omac = gen_mac () in
     let pkt =
       Arp_packet.encode { Arp_packet.operation = Arp_wire.Reply ;
                           source_ip = other ; source_mac = omac ;
-                          target_ip = ip ; target_mac = mac }
+                          target_ip = ipaddr ; target_mac = mac }
     in
     let t, outp, w = Arp_handler.input t pkt in
     Alcotest.(check (option out) "nothing to be sent" None outp) ;
@@ -556,9 +562,9 @@ module Handling = struct
 
   let handle_garp () =
     let mac = gen_mac ()
-    and ip = gen_ip ()
+    and ipaddr = gen_ip ()
     in
-    let t, _garp = Arp_handler.create ~timeout:1 mac ip in
+    let t, _garp = Arp_handler.create ~timeout:1 ~ipaddr mac in
     let other = gen_ip () in
     let omac = gen_mac () in
     let pkt = Arp_packet.encode (garp_of other omac) in
@@ -570,45 +576,45 @@ module Handling = struct
 
   let answer_req_broadcast () =
     let mac = gen_mac ()
-    and ip = gen_ip ()
+    and ipaddr = gen_ip ()
     in
-    let t, _garp = Arp_handler.create ~timeout:1 mac ip in
+    let t, _garp = Arp_handler.create ~timeout:1 ~ipaddr mac in
     let other = gen_ip () in
     let omac = gen_mac () in
-    let pkt, _ = query omac other ip in
+    let pkt, _ = query omac other ipaddr in
     let _, outp, w = Arp_handler.input t pkt in
     Alcotest.(check (option (pair m (list int))) "nothin woken up" None w) ;
     Alcotest.(check (option out) "request to us provokes a reply"
                 (Some (Arp_packet.encode { Arp_packet.operation = Arp_wire.Reply ;
-                                           source_mac = mac ; source_ip = ip ;
+                                           source_mac = mac ; source_ip = ipaddr ;
                                            target_mac = omac ; target_ip = other },
                        omac)) outp)
 
   let answer_req_unicast () =
     let mac = gen_mac ()
-    and ip = gen_ip ()
+    and ipaddr = gen_ip ()
     in
-    let t, _garp = Arp_handler.create ~timeout:1 mac ip in
+    let t, _garp = Arp_handler.create ~timeout:1 ~ipaddr mac in
     let other = gen_ip () in
     let omac = gen_mac () in
     let pkt =
       Arp_packet.encode { Arp_packet.operation = Arp_wire.Request ;
                           source_ip = other ; source_mac = omac ;
-                          target_ip = ip ; target_mac = mac }
+                          target_ip = ipaddr ; target_mac = mac }
     in
     let _, outp, w = Arp_handler.input t pkt in
     Alcotest.(check (option (pair m (list int))) "nothin woken up" None w) ;
     Alcotest.(check (option out) "request to us provokes a reply"
                 (Some (Arp_packet.encode { Arp_packet.operation = Arp_wire.Reply ;
-                                           source_mac = mac ; source_ip = ip ;
+                                           source_mac = mac ; source_ip = ipaddr ;
                                            target_mac = omac ; target_ip = other },
                        omac)) outp)
 
   let not_answer_req () =
     let mac = gen_mac ()
-    and ip = gen_ip ()
+    and ipaddr = gen_ip ()
     in
-    let t, _garp = Arp_handler.create ~timeout:1 mac ip in
+    let t, _garp = Arp_handler.create ~timeout:1 ~ipaddr mac in
     let other = gen_ip () in
     let third = gen_ip () in
     let omac = gen_mac () in
@@ -619,9 +625,9 @@ module Handling = struct
 
   let ignoring_random () =
     let mac = gen_mac ()
-    and ip = gen_ip ()
+    and ipaddr = gen_ip ()
     in
-    let t, _garp = Arp_handler.create ~timeout:1 mac ip in
+    let t, _garp = Arp_handler.create ~timeout:1 ~ipaddr mac in
     let pkt = Nocrypto.Rng.generate 24 in
     let _, outp, w = Arp_handler.input t pkt in
     Alcotest.(check (option out) "nothing out" None outp) ;
@@ -629,34 +635,34 @@ module Handling = struct
 
   let reply_does_not_override () =
     let mac = gen_mac ()
-    and ip = gen_ip ()
+    and ipaddr = gen_ip ()
     in
-    let t, _garp = Arp_handler.create ~timeout:1 mac ip in
+    let t, _garp = Arp_handler.create ~timeout:1 ~ipaddr mac in
     let omac = gen_mac () in
     let pkt =
       Arp_packet.encode { Arp_packet.operation = Arp_wire.Reply ;
-                          source_ip = ip ; source_mac = omac ;
-                          target_ip = ip ; target_mac = mac }
+                          source_ip = ipaddr ; source_mac = omac ;
+                          target_ip = ipaddr ; target_mac = mac }
     in
     let t, outp, w = Arp_handler.input t pkt in
     Alcotest.(check (option out) "nothing out" None outp) ;
     Alcotest.(check (option (pair m (list int))) "nothin woken up" None w) ;
     Alcotest.(check (option m) "our entry is still in cache" (Some mac)
-                (Arp_handler.in_cache t ip))
+                (Arp_handler.in_cache t ipaddr))
 
   let reply_query () =
     let mac = gen_mac ()
-    and ip = gen_ip ()
+    and ipaddr = gen_ip ()
     in
-    let t, _garp = Arp_handler.create ~timeout:1 mac ip in
+    let t, _garp = Arp_handler.create ~timeout:1 ~ipaddr mac in
     let other = gen_ip () in
     let omac = gen_mac () in
     let pkt =
       Arp_packet.encode { Arp_packet.operation = Arp_wire.Reply ;
                           source_ip = other ; source_mac = omac ;
-                          target_ip = ip ; target_mac = mac }
+                          target_ip = ipaddr ; target_mac = mac }
     in
-    let q = query mac ip other in
+    let q = query mac ipaddr other in
     let t, r = Arp_handler.query t other (merge 1) in
     Alcotest.check qres "r is request wait" (Arp_handler.RequestWait (q, [1])) r ;
     let t, outp, w = Arp_handler.input t pkt in
@@ -667,17 +673,17 @@ module Handling = struct
 
   let reply_in_cache () =
     let mac = gen_mac ()
-    and ip = gen_ip ()
+    and ipaddr = gen_ip ()
     in
-    let t, _garp = Arp_handler.create ~timeout:1 mac ip in
+    let t, _garp = Arp_handler.create ~timeout:1 ~ipaddr mac in
     let other = gen_ip () in
     let omac = gen_mac () in
     let pkt =
       Arp_packet.encode { Arp_packet.operation = Arp_wire.Reply ;
                           source_ip = other ; source_mac = omac ;
-                          target_ip = ip ; target_mac = mac }
+                          target_ip = ipaddr ; target_mac = mac }
     in
-    let q = query mac ip other in
+    let q = query mac ipaddr other in
     let t, r = Arp_handler.query t other (merge 1) in
     Alcotest.check qres "r is request wait" (Arp_handler.RequestWait (q, [1])) r ;
     let t, outp, w = Arp_handler.input t pkt in
@@ -687,17 +693,17 @@ module Handling = struct
 
   let reply_overriden () =
     let mac = gen_mac ()
-    and ip = gen_ip ()
+    and ipaddr = gen_ip ()
     in
-    let t, _garp = Arp_handler.create ~timeout:1 mac ip in
+    let t, _garp = Arp_handler.create ~timeout:1 ~ipaddr mac in
     let other = gen_ip () in
     let omac = gen_mac () in
     let pkt =
       Arp_packet.encode { Arp_packet.operation = Arp_wire.Reply ;
                           source_ip = other ; source_mac = omac ;
-                          target_ip = ip ; target_mac = mac }
+                          target_ip = ipaddr ; target_mac = mac }
     in
-    let q = query mac ip other in
+    let q = query mac ipaddr other in
     let t, r = Arp_handler.query t other (merge 1) in
     Alcotest.check qres "r is request wait" (Arp_handler.RequestWait (q, [1])) r ;
     let t, outp, w = Arp_handler.input t pkt in
@@ -711,17 +717,17 @@ module Handling = struct
 
   let reply_overriden_other () =
     let mac = gen_mac ()
-    and ip = gen_ip ()
+    and ipaddr = gen_ip ()
     in
-    let t, _garp = Arp_handler.create ~timeout:1 mac ip in
+    let t, _garp = Arp_handler.create ~timeout:1 ~ipaddr mac in
     let other = gen_ip () in
     let omac = gen_mac () in
     let pkt =
       Arp_packet.encode { Arp_packet.operation = Arp_wire.Reply ;
                           source_ip = other ; source_mac = omac ;
-                          target_ip = ip ; target_mac = mac }
+                          target_ip = ipaddr ; target_mac = mac }
     in
-    let q = query mac ip other in
+    let q = query mac ipaddr other in
     let t, r = Arp_handler.query t other (merge 1) in
     Alcotest.check qres "r is request wait" (Arp_handler.RequestWait (q, [1])) r ;
     let t, outp, w = Arp_handler.input t pkt in
@@ -732,7 +738,7 @@ module Handling = struct
     let pkt =
       Arp_packet.encode { Arp_packet.operation = Arp_wire.Reply ;
                           source_ip = other ; source_mac = omac ;
-                          target_ip = ip ; target_mac = mac }
+                          target_ip = ipaddr ; target_mac = mac }
     in
     let t, outp, w = Arp_handler.input t pkt in
     Alcotest.(check (option out) "nothing out" None outp) ;
@@ -742,17 +748,17 @@ module Handling = struct
 
   let reply_times_out () =
     let mac = gen_mac ()
-    and ip = gen_ip ()
+    and ipaddr = gen_ip ()
     in
-    let t, _garp = Arp_handler.create ~timeout:1 mac ip in
+    let t, _garp = Arp_handler.create ~timeout:1 ~ipaddr mac in
     let other = gen_ip () in
     let omac = gen_mac () in
     let pkt =
       Arp_packet.encode { Arp_packet.operation = Arp_wire.Reply ;
                           source_ip = other ; source_mac = omac ;
-                          target_ip = ip ; target_mac = mac }
+                          target_ip = ipaddr ; target_mac = mac }
     in
-    let q = query mac ip other in
+    let q = query mac ipaddr other in
     let t, r = Arp_handler.query t other (merge 1) in
     Alcotest.check qres "r is request wait" (Arp_handler.RequestWait (q, [1])) r ;
     let t, outp, w = Arp_handler.input t pkt in
@@ -770,17 +776,17 @@ module Handling = struct
 
   let dyn_not_advertised () =
     let mac = gen_mac ()
-    and ip = gen_ip ()
+    and ipaddr = gen_ip ()
     in
-    let t, _garp = Arp_handler.create ~timeout:1 mac ip in
+    let t, _garp = Arp_handler.create ~timeout:1 ~ipaddr mac in
     let other = gen_ip () in
     let omac = gen_mac () in
     let pkt =
       Arp_packet.encode { Arp_packet.operation = Arp_wire.Reply ;
                           source_ip = other ; source_mac = omac ;
-                          target_ip = ip ; target_mac = mac }
+                          target_ip = ipaddr ; target_mac = mac }
     in
-    let q = query mac ip other in
+    let q = query mac ipaddr other in
     let t, r = Arp_handler.query t other (merge 1) in
     Alcotest.check qres "r is request wait" (Arp_handler.RequestWait (q, [1])) r ;
     let t, outp, w = Arp_handler.input t pkt in
@@ -796,17 +802,17 @@ module Handling = struct
 
   let handle_reply_wakesup () =
     let mac = gen_mac ()
-    and ip = gen_ip ()
+    and ipaddr = gen_ip ()
     in
-    let t, _garp = Arp_handler.create ~timeout:1 mac ip in
+    let t, _garp = Arp_handler.create ~timeout:1 ~ipaddr mac in
     let other = gen_ip () in
     let omac = gen_mac () in
     let pkt =
       Arp_packet.encode { Arp_packet.operation = Arp_wire.Reply ;
                           source_ip = other ; source_mac = omac ;
-                          target_ip = ip ; target_mac = mac }
+                          target_ip = ipaddr ; target_mac = mac }
     in
-    let q = query mac ip other in
+    let q = query mac ipaddr other in
     let t, r = Arp_handler.query t other (merge 1) in
     Alcotest.check qres "r is request wait" (Arp_handler.RequestWait (q, [1])) r ;
     let t, r = Arp_handler.query t other (merge 2) in

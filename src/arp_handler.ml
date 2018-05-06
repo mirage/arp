@@ -67,15 +67,20 @@ let alias t ip =
 
 let create ?(timeout = 800) ?(retries = 5)
     ?(logsrc = Logs.Src.create "arp" ~doc:"ARP handler")
-    mac ip =
+    ?ipaddr
+    mac =
   if timeout <= 0 then
     invalid_arg "timeout must be strictly positive" ;
   if retries < 0 then
     invalid_arg "retries must be positive" ;
   let cache = M.empty in
+  let ip = match ipaddr with None -> Ipaddr.V4.any | Some x -> x in
   let t = { cache ; mac ; ip ; timeout ; retries ; epoch = 0 ; logsrc } in
-  let t, garp, _ = alias t ip in
-  t, garp
+  match ipaddr with
+  | None -> t, None
+  | Some ip ->
+    let t, garp, _ = alias t ip in
+    t, Some garp
 
 let static t ip mac =
   let cache = M.add ip (Static (mac, false)) t.cache in
