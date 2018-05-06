@@ -1,3 +1,7 @@
+## 0.2.1 (2018-05-06)
+
+* Avoid an initial gratitious ARP with Ipaddr.V4.any
+
 ## 0.2.0 (2017-01-17)
 
 * MirageOS3 support
