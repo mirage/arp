@@ -1,7 +1,7 @@
 (*
  * Copyright (c) 2016 Hannes Mehnert <hannes@mehnert.org>
  * Portions copyright to MirageOS team under ISC license:
- *   src/arp_packet.ml src/arp_wire.ml mirage/arpv4.mli mirage/arpv4.ml
+ *   src/arp_packet.ml mirage/arpv4.mli mirage/arpv4.ml
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above

@@ -12,10 +12,10 @@ depends: [
   "ocamlfind" {build}
   "ocamlbuild" {build}
   "topkg" {build}
-  "ppx_cstruct" {build}
   "cstruct" {>= "2.2.0"}
   "ipaddr" {>= "2.2.0"}
   "logs"
+  "lru"
   "alcotest" {test}
   "nocrypto" {test}
 ]

@@ -1,6 +1,26 @@
 (* based on ISC-licensed mirage-tcpip module *)
+
+type op =
+  | Request
+  | Reply
+
+let op_to_int = function Request -> 1 | Reply -> 2
+let int_to_op = function 1 -> Some Request | 2 -> Some Reply | _ -> None
+
+(* ARP packet contains:
+   16 bit hardware type = ethernet = 0x01
+   16 bit protocol type = ipv4 = 0x0800
+   8 bit hardware address length = 6
+   8 bit protocol address length = 4
+   16 bit operation
+   sender hardware address = 6 byte
+   sender protocol address = 4 byte
+   target hardware address = 6 byte
+   target protocol address = 4 byte
+ *)
+
 type t = {
-  operation : Arp_wire.op;
+  operation : op;
   source_mac : Macaddr.t;
   source_ip : Ipaddr.V4.t;
   target_mac : Macaddr.t;
@@ -14,10 +34,10 @@ type error =
 
 (*BISECT-IGNORE-BEGIN*)
 let pp fmt t =
-  if t.operation = Arp_wire.Request then
+  if t.operation = Request then
     Format.fprintf fmt "ARP request, who has %a tell %a"
       Ipaddr.V4.pp_hum t.target_ip Ipaddr.V4.pp_hum t.source_ip
-  else (* t.op = Arp_wire.Reply *)
+  else (* t.op = Reply *)
     Format.fprintf fmt "ARP reply, %a is at %s"
       Ipaddr.V4.pp_hum t.source_ip (Macaddr.to_string t.source_mac)
 
@@ -32,6 +52,7 @@ let ipv4_ethertype = 0x0800
 and ipv4_size = 4
 and ether_htype = 1
 and ether_size = 6
+and arp_frame_size = 28
 
 let guard p e = if p then Ok () else Error e
 
@@ -40,23 +61,23 @@ let (>>=) x f = match x with
   | Error e -> Error e
 
 let decode buf =
-  let open Arp_wire in
-  let check_len buf = Cstruct.len buf >= sizeof_arp in
+  let check_len buf = Cstruct.len buf >= arp_frame_size in
   let check_hdr buf =
-    get_arp_htype buf = ether_htype &&
-    get_arp_ptype buf = ipv4_ethertype &&
-    get_arp_hlen buf = ether_size &&
-    get_arp_plen buf = ipv4_size
+    Cstruct.BE.get_uint16 buf 0 = ether_htype &&
+    Cstruct.BE.get_uint16 buf 2 = ipv4_ethertype &&
+    Cstruct.get_uint8 buf 4 = ether_size &&
+    Cstruct.get_uint8 buf 5 = ipv4_size
   in
   guard (check_len buf) Too_short >>= fun () ->
   guard (check_hdr buf) Unusable >>= fun () ->
-  match Arp_wire.int_to_op @@ get_arp_op buf with
-  | None -> Error (Unknown_operation (get_arp_op buf))
+  let op = Cstruct.BE.get_uint16 buf 6 in
+  match int_to_op op with
+  | None -> Error (Unknown_operation op)
   | Some operation ->
-    let source_mac = Macaddr.of_bytes_exn (copy_arp_sha buf)
-    and target_mac = Macaddr.of_bytes_exn (copy_arp_tha buf)
-    and source_ip = Ipaddr.V4.of_int32 (get_arp_spa buf)
-    and target_ip = Ipaddr.V4.of_int32 (get_arp_tpa buf)
+    let source_mac = Macaddr.of_bytes_exn (Cstruct.to_string (Cstruct.sub buf 8 6))
+    and target_mac = Macaddr.of_bytes_exn (Cstruct.to_string (Cstruct.sub buf 18 6))
+    and source_ip = Ipaddr.V4.of_int32 (Cstruct.BE.get_uint32 buf 14)
+    and target_ip = Ipaddr.V4.of_int32 (Cstruct.BE.get_uint32 buf 24)
     in
     Ok {
       operation ;
@@ -66,24 +87,22 @@ let decode buf =
 
 let hdr =
   let buf = Cstruct.create 6 in
-  let open Arp_wire in
-  set_arp_htype buf ether_htype;
-  set_arp_ptype buf ipv4_ethertype;
-  set_arp_hlen buf ether_size;
-  set_arp_plen buf ipv4_size;
+  Cstruct.BE.set_uint16 buf 0 ether_htype;
+  Cstruct.BE.set_uint16 buf 2 ipv4_ethertype;
+  Cstruct.set_uint8 buf 4 ether_size;
+  Cstruct.set_uint8 buf 5 ipv4_size;
   buf
 
 let encode_into t buf =
-  let open Arp_wire in
   Cstruct.blit hdr 0 buf 0 6 ;
-  set_arp_op buf (op_to_int t.operation);
-  set_arp_sha (Macaddr.to_bytes t.source_mac) 0 buf;
-  set_arp_spa buf (Ipaddr.V4.to_int32 t.source_ip);
-  set_arp_tha (Macaddr.to_bytes t.target_mac) 0 buf;
-  set_arp_tpa buf (Ipaddr.V4.to_int32 t.target_ip)
+  Cstruct.BE.set_uint16 buf 6 (op_to_int t.operation) ;
+  Cstruct.blit_from_string (Macaddr.to_bytes t.source_mac) 0 buf 8 6 ;
+  Cstruct.BE.set_uint32 buf 14 (Ipaddr.V4.to_int32 t.source_ip) ;
+  Cstruct.blit_from_string (Macaddr.to_bytes t.target_mac) 0 buf 18 6 ;
+  Cstruct.BE.set_uint32 buf 24 (Ipaddr.V4.to_int32 t.target_ip)
   [@@inline]
 
 let encode t =
-  let buf = Cstruct.create_unsafe Arp_wire.sizeof_arp in
+  let buf = Cstruct.create_unsafe arp_frame_size in
   encode_into t buf;
   buf

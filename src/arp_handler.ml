@@ -51,7 +51,7 @@ let alias t ip =
   let cache = M.add ip (Static (t.mac, true)) t.cache in
   (* see RFC5227 Section 3 why we send out an ARP request *)
   let garp = Arp_packet.({
-      operation = Arp_wire.Request ;
+      operation = Request ;
       source_mac = t.mac ;
       target_mac = mac0 ;
       source_ip = ip ; target_ip = ip })
@@ -98,24 +98,22 @@ let in_cache t ip =
   | Dynamic (m, _) -> Some m
 
 let request t ip =
-  let open Arp_packet in
   let target = Macaddr.broadcast in
   let request = {
-    operation = Arp_wire.Request ;
+    Arp_packet.operation = Arp_packet.Request ;
     source_mac = t.mac ; source_ip = t.ip ;
     target_mac = target ; target_ip = ip
   }
   in
-  encode request, target
+  Arp_packet.encode request, target
 
 let reply arp m =
-  let open Arp_packet in
   let reply = {
-    operation = Arp_wire.Reply ;
-    source_mac = m ; source_ip = arp.target_ip ;
-    target_mac = arp.source_mac ; target_ip = arp.source_ip ;
+    Arp_packet.operation = Arp_packet.Reply ;
+    source_mac = m ; source_ip = arp.Arp_packet.target_ip ;
+    target_mac = arp.Arp_packet.source_mac ; target_ip = arp.Arp_packet.source_ip ;
   } in
-  encode reply, arp.source_mac
+  Arp_packet.encode reply, arp.Arp_packet.source_mac
 
 let tick t =
   let epoch = t.epoch in
@@ -205,8 +203,7 @@ let handle_request t arp =
     t, None, None
 
 let input t buf =
-  let open Arp_packet in
-  match decode buf with
+  match Arp_packet.decode buf with
   | Error e ->
     (*BISECT-IGNORE-BEGIN*)
     Logs.info ~src:t.logsrc
@@ -215,8 +212,8 @@ let input t buf =
     t, None, None
   | Ok arp ->
     if
-      Ipaddr.V4.compare arp.Arp_packet.source_ip arp.target_ip = 0 ||
-      arp.operation = Arp_wire.Reply
+      Ipaddr.V4.compare arp.Arp_packet.source_ip arp.Arp_packet.target_ip = 0 ||
+      arp.Arp_packet.operation = Arp_packet.Reply
     then
       let mac = arp.Arp_packet.source_mac
       and source = arp.Arp_packet.source_ip

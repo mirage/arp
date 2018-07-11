@@ -7,11 +7,11 @@ B _build/**
 
 FLG -safe-string -warn_error +1..49 -w +A-4-6-44-48
 
+PKG lru
 PKG topkg
 PKG logs
 PKG ipaddr
 PKG cstruct
-PKG cstruct.ppx
 
 PKG nocrypto
 PKG alcotest

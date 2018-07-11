@@ -31,7 +31,7 @@ let gen_op () =
   let buf = Cstruct.create 2 in
   let op = 1 + op mod 2 in
   Cstruct.BE.set_uint16 buf 0 op ;
-  (if op = 1 then Arp_wire.Request else Arp_wire.Reply), buf
+  (if op = 1 then Arp_packet.Request else Arp_packet.Reply), buf
 
 let gen_arp () =
   let sm, source_mac = gen_mac ()
@@ -186,7 +186,7 @@ end
 module Handling = struct
   let garp_of ip mac =
     let mac0 = Macaddr.of_bytes_exn (Cstruct.to_string (Cstruct.create 6)) in
-    { Arp_packet.operation = Arp_wire.Request ;
+    { Arp_packet.operation = Arp_packet.Request ;
       source_ip = ip ; target_ip = ip ;
       source_mac = mac ; target_mac = mac0 }
 
@@ -416,7 +416,7 @@ module Handling = struct
     Alcotest.check qres "own IP can be queried" (Arp_handler.Mac mac) res
 
   let query source_mac source_ip target_ip =
-    Arp_packet.encode { Arp_packet.operation = Arp_wire.Request ;
+    Arp_packet.encode { Arp_packet.operation = Arp_packet.Request ;
                         source_mac ; source_ip ;
                         target_mac = Macaddr.broadcast ; target_ip },
     Macaddr.broadcast
@@ -489,7 +489,7 @@ module Handling = struct
     let t, _ = Arp_handler.query t other (merge 1) in
     let omac = gen_mac () in
     let pkt =
-      Arp_packet.encode { Arp_packet.operation = Arp_wire.Reply ;
+      Arp_packet.encode { Arp_packet.operation = Arp_packet.Reply ;
                           source_ip = other ; source_mac = omac ;
                           target_ip = ipaddr ; target_mac = mac }
     in
@@ -550,7 +550,7 @@ module Handling = struct
     let other = gen_ip () in
     let omac = gen_mac () in
     let pkt =
-      Arp_packet.encode { Arp_packet.operation = Arp_wire.Reply ;
+      Arp_packet.encode { Arp_packet.operation = Arp_packet.Reply ;
                           source_ip = other ; source_mac = omac ;
                           target_ip = ipaddr ; target_mac = mac }
     in
@@ -585,7 +585,7 @@ module Handling = struct
     let _, outp, w = Arp_handler.input t pkt in
     Alcotest.(check (option (pair m (list int))) "nothin woken up" None w) ;
     Alcotest.(check (option out) "request to us provokes a reply"
-                (Some (Arp_packet.encode { Arp_packet.operation = Arp_wire.Reply ;
+                (Some (Arp_packet.encode { Arp_packet.operation = Arp_packet.Reply ;
                                            source_mac = mac ; source_ip = ipaddr ;
                                            target_mac = omac ; target_ip = other },
                        omac)) outp)
@@ -598,14 +598,14 @@ module Handling = struct
     let other = gen_ip () in
     let omac = gen_mac () in
     let pkt =
-      Arp_packet.encode { Arp_packet.operation = Arp_wire.Request ;
+      Arp_packet.encode { Arp_packet.operation = Arp_packet.Request ;
                           source_ip = other ; source_mac = omac ;
                           target_ip = ipaddr ; target_mac = mac }
     in
     let _, outp, w = Arp_handler.input t pkt in
     Alcotest.(check (option (pair m (list int))) "nothin woken up" None w) ;
     Alcotest.(check (option out) "request to us provokes a reply"
-                (Some (Arp_packet.encode { Arp_packet.operation = Arp_wire.Reply ;
+                (Some (Arp_packet.encode { Arp_packet.operation = Arp_packet.Reply ;
                                            source_mac = mac ; source_ip = ipaddr ;
                                            target_mac = omac ; target_ip = other },
                        omac)) outp)
@@ -640,7 +640,7 @@ module Handling = struct
     let t, _garp = Arp_handler.create ~timeout:1 ~ipaddr mac in
     let omac = gen_mac () in
     let pkt =
-      Arp_packet.encode { Arp_packet.operation = Arp_wire.Reply ;
+      Arp_packet.encode { Arp_packet.operation = Arp_packet.Reply ;
                           source_ip = ipaddr ; source_mac = omac ;
                           target_ip = ipaddr ; target_mac = mac }
     in
@@ -658,7 +658,7 @@ module Handling = struct
     let other = gen_ip () in
     let omac = gen_mac () in
     let pkt =
-      Arp_packet.encode { Arp_packet.operation = Arp_wire.Reply ;
+      Arp_packet.encode { Arp_packet.operation = Arp_packet.Reply ;
                           source_ip = other ; source_mac = omac ;
                           target_ip = ipaddr ; target_mac = mac }
     in
@@ -679,7 +679,7 @@ module Handling = struct
     let other = gen_ip () in
     let omac = gen_mac () in
     let pkt =
-      Arp_packet.encode { Arp_packet.operation = Arp_wire.Reply ;
+      Arp_packet.encode { Arp_packet.operation = Arp_packet.Reply ;
                           source_ip = other ; source_mac = omac ;
                           target_ip = ipaddr ; target_mac = mac }
     in
@@ -699,7 +699,7 @@ module Handling = struct
     let other = gen_ip () in
     let omac = gen_mac () in
     let pkt =
-      Arp_packet.encode { Arp_packet.operation = Arp_wire.Reply ;
+      Arp_packet.encode { Arp_packet.operation = Arp_packet.Reply ;
                           source_ip = other ; source_mac = omac ;
                           target_ip = ipaddr ; target_mac = mac }
     in
@@ -723,7 +723,7 @@ module Handling = struct
     let other = gen_ip () in
     let omac = gen_mac () in
     let pkt =
-      Arp_packet.encode { Arp_packet.operation = Arp_wire.Reply ;
+      Arp_packet.encode { Arp_packet.operation = Arp_packet.Reply ;
                           source_ip = other ; source_mac = omac ;
                           target_ip = ipaddr ; target_mac = mac }
     in
@@ -736,7 +736,7 @@ module Handling = struct
     Alcotest.(check (option m) "entry in cache" (Some omac) (Arp_handler.in_cache t other)) ;
     let omac = gen_mac () in
     let pkt =
-      Arp_packet.encode { Arp_packet.operation = Arp_wire.Reply ;
+      Arp_packet.encode { Arp_packet.operation = Arp_packet.Reply ;
                           source_ip = other ; source_mac = omac ;
                           target_ip = ipaddr ; target_mac = mac }
     in
@@ -754,7 +754,7 @@ module Handling = struct
     let other = gen_ip () in
     let omac = gen_mac () in
     let pkt =
-      Arp_packet.encode { Arp_packet.operation = Arp_wire.Reply ;
+      Arp_packet.encode { Arp_packet.operation = Arp_packet.Reply ;
                           source_ip = other ; source_mac = omac ;
                           target_ip = ipaddr ; target_mac = mac }
     in
@@ -782,7 +782,7 @@ module Handling = struct
     let other = gen_ip () in
     let omac = gen_mac () in
     let pkt =
-      Arp_packet.encode { Arp_packet.operation = Arp_wire.Reply ;
+      Arp_packet.encode { Arp_packet.operation = Arp_packet.Reply ;
                           source_ip = other ; source_mac = omac ;
                           target_ip = ipaddr ; target_mac = mac }
     in
@@ -808,7 +808,7 @@ module Handling = struct
     let other = gen_ip () in
     let omac = gen_mac () in
     let pkt =
-      Arp_packet.encode { Arp_packet.operation = Arp_wire.Reply ;
+      Arp_packet.encode { Arp_packet.operation = Arp_packet.Reply ;
                           source_ip = other ; source_mac = omac ;
                           target_ip = ipaddr ; target_mac = mac }
     in

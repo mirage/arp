@@ -3,8 +3,7 @@ true : warn(+A-4-58)
 true : package(cstruct ipaddr)
 "src" : include
 
-<src/arp_wire.{ml,mli}>: package(ppx_cstruct)
-<src/arp_handler.{ml,mli}>: package(logs)
+<src/arp_handler.{ml,mli}>: package(logs lru)
 
 <mirage/arp.{ml,mli}>: package(mirage-protocols mirage-protocols-lwt mirage-clock mirage-time-lwt lwt logs tcpip.ethif duration)
 

@@ -1,13 +1,20 @@
 (** Conversion between wire and high-level data
 
-    There is a {{!Arp_wire}binary wire representation}, and a {{!t}high-level
-    datatype}.  This module converts between the two.  While decoding can result
-    in an error, encoding can not.
-*)
+    The {{!t}high-level datatype} can be decoded and encoded to bytes to be sent
+    on the wire.  ARP specifies hardware and protocol addresses, but this
+    implementation picks Ethernet and IPv4 statically. While decoding can result
+    in an error, encoding can not.  *)
+
+type op =
+  | Request
+  | Reply
+
+val op_to_int : op -> int
+val int_to_op : int -> op option
 
 (** The high-level ARP frame consisting of the two address pairs and an operation. *)
 type t = {
-  operation : Arp_wire.op;
+  operation : op;
   source_mac : Macaddr.t;
   source_ip : Ipaddr.V4.t;
   target_mac : Macaddr.t;
