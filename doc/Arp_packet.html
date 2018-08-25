@@ -6,41 +6,59 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="Start" href="index.html">
 <link rel="previous" href="Arp_handler.html">
-<link rel="next" href="Arp_wire.html">
 <link rel="Up" href="index.html">
 <link title="Index of types" rel=Appendix href="index_types.html">
 <link title="Index of values" rel=Appendix href="index_values.html">
 <link title="Index of modules" rel=Appendix href="index_modules.html">
 <link title="Arp_handler" rel="Chapter" href="Arp_handler.html">
-<link title="Arp_packet" rel="Chapter" href="Arp_packet.html">
-<link title="Arp_wire" rel="Chapter" href="Arp_wire.html"><link title="Decoding" rel="Section" href="#2_Decoding">
+<link title="Arp_packet" rel="Chapter" href="Arp_packet.html"><link title="Decoding" rel="Section" href="#2_Decoding">
 <link title="Encoding" rel="Section" href="#2_Encoding">
 <title>Arp_packet</title>
 </head>
 <body>
 <div class="navbar"><a class="pre" href="Arp_handler.html" title="Arp_handler">Previous</a>
 &nbsp;<a class="up" href="index.html" title="Index">Up</a>
-&nbsp;<a class="post" href="Arp_wire.html" title="Arp_wire">Next</a>
-</div>
+&nbsp;</div>
 <h1>Module <a href="type_Arp_packet.html">Arp_packet</a></h1>
 
 <pre><span id="MODULEArp_packet"><span class="keyword">module</span> Arp_packet</span>: <code class="code"><span class="keyword">sig</span></code> <a href="Arp_packet.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info module top">
 <div class="info-desc">
 <p>Conversion between wire and high-level data</p>
 
-<p>There is a <a href="Arp_wire.html">binary wire representation</a>, and a <a href="Arp_packet.html#TYPEt">high-level
-    datatype</a>.  This module converts between the two.  While decoding can result
+<p>The <a href="Arp_packet.html#TYPEt">high-level datatype</a> can be decoded and encoded to bytes to be sent
+    on the wire.  ARP specifies hardware and protocol addresses, but this
+    implementation picks Ethernet and IPv4 statically. While decoding can result
     in an error, encoding can not.</p>
 </div>
 </div>
 <hr width="100%">
 
+<pre><code><span id="TYPEop"><span class="keyword">type</span> <code class="type"></code>op</span> = </code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTop.Request"><span class="constructor">Request</span></span></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTop.Reply"><span class="constructor">Reply</span></span></code></td>
+
+</tr></table>
+
+
+
+<pre><span id="VALop_to_int"><span class="keyword">val</span> op_to_int</span> : <code class="type"><a href="Arp_packet.html#TYPEop">op</a> -> int</code></pre>
+<pre><span id="VALint_to_op"><span class="keyword">val</span> int_to_op</span> : <code class="type">int -> <a href="Arp_packet.html#TYPEop">op</a> option</code></pre>
 <pre><code><span id="TYPEt"><span class="keyword">type</span> <code class="type"></code>t</span> = {</code></pre><table class="typetable">
 <tr>
 <td align="left" valign="top" >
 <code>&nbsp;&nbsp;</code></td>
 <td align="left" valign="top" >
-<code><span id="TYPEELTt.operation">operation</span>&nbsp;: <code class="type"><a href="Arp_wire.html#TYPEop">Arp_wire.op</a></code>;</code></td>
+<code><span id="TYPEELTt.operation">operation</span>&nbsp;: <code class="type"><a href="Arp_packet.html#TYPEop">op</a></code>;</code></td>
 
 </tr>
 <tr>

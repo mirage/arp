@@ -7,13 +7,15 @@
 <link title="Index of values" rel=Appendix href="index_values.html">
 <link title="Index of modules" rel=Appendix href="index_modules.html">
 <link title="Arp_handler" rel="Chapter" href="Arp_handler.html">
-<link title="Arp_packet" rel="Chapter" href="Arp_packet.html">
-<link title="Arp_wire" rel="Chapter" href="Arp_wire.html"><title>Arp_packet</title>
+<link title="Arp_packet" rel="Chapter" href="Arp_packet.html"><title>Arp_packet</title>
 </head>
 <body>
 <code class="code"><span class="keyword">sig</span><br>
+&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;op&nbsp;=&nbsp;<span class="constructor">Request</span>&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">Reply</span><br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;op_to_int&nbsp;:&nbsp;<span class="constructor">Arp_packet</span>.op&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;int_to_op&nbsp;:&nbsp;int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Arp_packet</span>.op&nbsp;option<br>
 &nbsp;&nbsp;<span class="keyword">type</span>&nbsp;t&nbsp;=&nbsp;{<br>
-&nbsp;&nbsp;&nbsp;&nbsp;operation&nbsp;:&nbsp;<span class="constructor">Arp_wire</span>.op;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;operation&nbsp;:&nbsp;<span class="constructor">Arp_packet</span>.op;<br>
 &nbsp;&nbsp;&nbsp;&nbsp;source_mac&nbsp;:&nbsp;<span class="constructor">Macaddr</span>.t;<br>
 &nbsp;&nbsp;&nbsp;&nbsp;source_ip&nbsp;:&nbsp;<span class="constructor">Ipaddr</span>.<span class="constructor">V4</span>.t;<br>
 &nbsp;&nbsp;&nbsp;&nbsp;target_mac&nbsp;:&nbsp;<span class="constructor">Macaddr</span>.t;<br>
