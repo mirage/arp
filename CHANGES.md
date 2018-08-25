@@ -1,3 +1,8 @@
+## 0.2.2 (2018-08-25)
+
+* remove Arp_wire module, now integrated into Arp_packet
+* remove usage of ppx_cstruct
+
 ## 0.2.1 (2018-05-06)
 
 * Avoid an initial gratitious ARP with Ipaddr.V4.any
