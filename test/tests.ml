@@ -204,7 +204,7 @@ module Handling = struct
   let i =
     let module M = struct
       type t = Ipaddr.V4.t
-      let pp = Ipaddr.V4.pp_hum
+      let pp = Ipaddr.V4.pp
       let equal a b = Ipaddr.V4.compare a b = 0
     end in
     (module M : Alcotest.TESTABLE with type t = M.t)
