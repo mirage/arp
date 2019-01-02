@@ -1,6 +1,6 @@
 description = "ARP implementation for OCaml"
 version = "%%VERSION_NUM%%"
-requires = "cstruct ipaddr logs"
+requires = "cstruct ipaddr macaddr logs"
 archive(byte) = "arp.cma"
 archive(native) = "arp.cmxa"
 plugin(byte) = "arp.cma"
