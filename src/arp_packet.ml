@@ -36,10 +36,10 @@ type error =
 let pp fmt t =
   if t.operation = Request then
     Format.fprintf fmt "ARP request, who has %a tell %a"
-      Ipaddr.V4.pp_hum t.target_ip Ipaddr.V4.pp_hum t.source_ip
+      Ipaddr.V4.pp t.target_ip Ipaddr.V4.pp t.source_ip
   else (* t.op = Reply *)
-    Format.fprintf fmt "ARP reply, %a is at %s"
-      Ipaddr.V4.pp_hum t.source_ip (Macaddr.to_string t.source_mac)
+    Format.fprintf fmt "ARP reply, %a is at %a"
+      Ipaddr.V4.pp t.source_ip Macaddr.pp t.source_mac
 
 let pp_error ppf = function
   | Too_short -> Format.pp_print_string ppf "frame too short (below 28 bytes)"

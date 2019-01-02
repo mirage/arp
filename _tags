@@ -1,6 +1,6 @@
 true : color(always), bin_annot, safe_string, principal
 true : warn(+A-4-58)
-true : package(cstruct ipaddr)
+true : package(cstruct ipaddr macaddr)
 "src" : include
 
 <src/arp_handler.{ml,mli}>: package(logs)

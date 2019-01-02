@@ -20,20 +20,21 @@ let ip t = t.ip
 
 (*BISECT-IGNORE-BEGIN*)
 let pp_entry now k pp =
-  let ip = Ipaddr.V4.to_string k in
   function
   | Static (m, adv) ->
     let adv = if adv then " advertising" else "" in
-    Format.fprintf pp "%s at %s (static%s)" ip (Macaddr.to_string m) adv
+    Format.fprintf pp "%a at %a (static%s)" Ipaddr.V4.pp k Macaddr.pp m adv
   | Dynamic (m, t) ->
-    Format.fprintf pp "%s at %s (timeout in %d)" ip (Macaddr.to_string m) (t - now)
+    Format.fprintf pp "%a at %a (timeout in %d)" Ipaddr.V4.pp k
+      Macaddr.pp m (t - now)
   | Pending (_, retries) ->
-    Format.fprintf pp "%s (incomplete, %d retries left)" ip (retries - now)
+    Format.fprintf pp "%a (incomplete, %d retries left)"
+      Ipaddr.V4.pp k (retries - now)
 
 let pp pp t =
-  Format.fprintf pp "mac %s ip %a entries %d timeout %d retries %d@."
-    (Macaddr.to_string t.mac)
-    Ipaddr.V4.pp_hum t.ip
+  Format.fprintf pp "mac %a ip %a entries %d timeout %d retries %d@."
+    Macaddr.pp t.mac
+    Ipaddr.V4.pp t.ip
     (M.cardinal t.cache)
     t.timeout t.retries ;
   M.iter (fun k v -> pp_entry t.epoch k pp v ; Format.pp_print_space pp ()) t.cache
@@ -58,8 +59,8 @@ let alias t ip =
   in
   (*BISECT-IGNORE-BEGIN*)
   Logs.info ~src:t.logsrc
-    (fun pp -> pp "Sending gratuitous ARP for %a (%s)"
-        Ipaddr.V4.pp_hum ip (Macaddr.to_string t.mac)) ;
+    (fun pp -> pp "Sending gratuitous ARP for %a (%a)"
+        Ipaddr.V4.pp ip Macaddr.pp t.mac) ;
   (*BISECT-IGNORE-END*)
   { t with cache },
   (Arp_packet.encode garp, Macaddr.broadcast),
@@ -121,8 +122,8 @@ let tick t =
     | Dynamic (m, tick) when tick = epoch ->
       (*BISECT-IGNORE-BEGIN*)
       Logs.debug ~src:t.logsrc
-        (fun pp -> pp "removing ARP entry %a (mac %s)"
-            Ipaddr.V4.pp_hum k (Macaddr.to_string m)) ;
+        (fun pp -> pp "removing ARP entry %a (mac %a)"
+            Ipaddr.V4.pp k Macaddr.pp m) ;
       (*BISECT-IGNORE-END*)
       M.remove k cache, acc, r
     | Dynamic (_, tick) when tick = succ epoch ->
@@ -131,7 +132,7 @@ let tick t =
       (*BISECT-IGNORE-BEGIN*)
       Logs.info ~src:t.logsrc
         (fun pp -> pp "ARP timeout after %d retries for %a"
-            t.retries Ipaddr.V4.pp_hum k) ;
+            t.retries Ipaddr.V4.pp k) ;
       (*BISECT-IGNORE-END*)
       M.remove k cache, acc, a :: r
     | Pending _ -> cache, request t k :: acc, r
@@ -153,17 +154,17 @@ let handle_reply t source mac =
     Logs.info ~src:t.logsrc
       (fun pp ->
          pp "ignoring ARP reply for %a (static arp entry in cache)"
-           Ipaddr.V4.pp_hum source) ;
+           Ipaddr.V4.pp source) ;
     (*BISECT-IGNORE-END*)
     t, None, None
   | Dynamic (m, _) when Macaddr.compare mac m = 0 -> extcache, None, None
   | Dynamic (m, _) ->
     (*BISECT-IGNORE-BEGIN*)
     Logs.warn ~src:t.logsrc
-      (fun pp -> pp "ARP for %a moved from %s to %s"
-          Ipaddr.V4.pp_hum source
-          (Macaddr.to_string m)
-          (Macaddr.to_string mac)) ;
+      (fun pp -> pp "ARP for %a moved from %a to %a"
+          Ipaddr.V4.pp source
+          Macaddr.pp m
+          Macaddr.pp mac) ;
     (*BISECT-IGNORE-END*)
     extcache, None, None
   | Pending (xs, _) -> extcache, None, Some (mac, xs)
@@ -177,28 +178,28 @@ let handle_request t arp =
   | exception Not_found ->
     (*BISECT-IGNORE-BEGIN*)
     Logs.debug ~src:t.logsrc
-      (fun pp -> pp "ignoring ARP request for %a from %a (mac %s)"
-          Ipaddr.V4.pp_hum dest
-          Ipaddr.V4.pp_hum source
-          (Macaddr.to_string arp.Arp_packet.source_mac)) ;
+      (fun pp -> pp "ignoring ARP request for %a from %a (mac %a)"
+          Ipaddr.V4.pp dest
+          Ipaddr.V4.pp source
+          Macaddr.pp arp.Arp_packet.source_mac) ;
     (*BISECT-IGNORE-END*)
     t, None, None
   | Static (m, true) ->
     (*BISECT-IGNORE-BEGIN*)
     Logs.debug ~src:t.logsrc
-      (fun pp -> pp "replying to ARP request for %a from %a (mac %s)"
-          Ipaddr.V4.pp_hum dest
-          Ipaddr.V4.pp_hum source
-          (Macaddr.to_string arp.Arp_packet.source_mac)) ;
+      (fun pp -> pp "replying to ARP request for %a from %a (mac %a)"
+          Ipaddr.V4.pp dest
+          Ipaddr.V4.pp source
+          Macaddr.pp arp.Arp_packet.source_mac) ;
     (*BISECT-IGNORE-END*)
     t, Some (reply arp m), None
   | _ ->
     (*BISECT-IGNORE-BEGIN*)
     Logs.debug ~src:t.logsrc
-      (fun pp -> pp "ignoring ARP request for %a from %a (mac %s)"
-          Ipaddr.V4.pp_hum dest
-          Ipaddr.V4.pp_hum source
-          (Macaddr.to_string arp.Arp_packet.source_mac)) ;
+      (fun pp -> pp "ignoring ARP request for %a from %a (mac %a)"
+          Ipaddr.V4.pp dest
+          Ipaddr.V4.pp source
+          Macaddr.pp arp.Arp_packet.source_mac) ;
     (*BISECT-IGNORE-END*)
     t, None, None
 
