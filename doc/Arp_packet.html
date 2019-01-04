@@ -98,7 +98,7 @@
 </div>
 
 
-<pre><span id="VALpp"><span class="keyword">val</span> pp</span> : <code class="type">Format.formatter -> <a href="Arp_packet.html#TYPEt">t</a> -> unit</code></pre><div class="info ">
+<pre><span id="VALpp"><span class="keyword">val</span> pp</span> : <code class="type">Stdlib.Format.formatter -> <a href="Arp_packet.html#TYPEt">t</a> -> unit</code></pre><div class="info ">
 <div class="info-desc">
 <p><code class="code">pp&nbsp;ppf&nbsp;t</code> prints the frame <code class="code">t</code> on <code class="code">ppf</code>.</p>
 </div>
@@ -140,13 +140,13 @@
 </div>
 
 
-<pre><span id="VALpp_error"><span class="keyword">val</span> pp_error</span> : <code class="type">Format.formatter -> <a href="Arp_packet.html#TYPEerror">error</a> -> unit</code></pre><div class="info ">
+<pre><span id="VALpp_error"><span class="keyword">val</span> pp_error</span> : <code class="type">Stdlib.Format.formatter -> <a href="Arp_packet.html#TYPEerror">error</a> -> unit</code></pre><div class="info ">
 <div class="info-desc">
 <p><code class="code">pp_error&nbsp;ppf&nbsp;err</code> prints the error <code class="code">err</code> on <code class="code">ppf</code>.</p>
 </div>
 </div>
 <h3 id="2_Decoding">Decoding</h3>
-<pre><span id="VALdecode"><span class="keyword">val</span> decode</span> : <code class="type">Cstruct.t -> (<a href="Arp_packet.html#TYPEt">t</a>, <a href="Arp_packet.html#TYPEerror">error</a>) Pervasives.result</code></pre><div class="info ">
+<pre><span id="VALdecode"><span class="keyword">val</span> decode</span> : <code class="type">Cstruct.t -> (<a href="Arp_packet.html#TYPEt">t</a>, <a href="Arp_packet.html#TYPEerror">error</a>) Stdlib.result</code></pre><div class="info ">
 <div class="info-desc">
 <p><code class="code">decode&nbsp;buf</code> attempts to decode the buffer into an ARP frame <code class="code">t</code>.</p>
 </div>
