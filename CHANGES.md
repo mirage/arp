@@ -1,3 +1,7 @@
+## 0.2.3 (2019-01-04)
+
+* port to ipaddr 3.0.0
+
 ## 0.2.2 (2018-08-25)
 
 * remove Arp_wire module, now integrated into Arp_packet
