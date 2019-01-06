@@ -1,6 +1,17 @@
-## dev
+## 1.0.0 (2019-01-06)
 
-* port build system to Dune (@avsm)
+* split opam package into two separate ones: a core
+  `arp` package and the `arp-mirage` implementation
+  for MirageOS that has more dependencies.  This
+  eliminates the use of depopts that was done previously
+  to build the Mirage layer. (#7 @avsm)
+
+* port build system to Dune (#7 @avsm). The `make coverage`
+  and `make bench` targets will do the job of the previous
+  topkg targets for those.
+
+* minor fixes to ocamldoc comments to be compatible with
+  odoc.
 
 ## 0.2.3 (2019-01-04)
 
