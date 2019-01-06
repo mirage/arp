@@ -22,7 +22,7 @@ report](https://hannesm.github.io/arp/coverage/).
 ## Installation
 
 `opam install arp` will install this library, once you have installed OCaml (>=
-4.02.0) and opam (>= 1.2.2).
+4.04.0) and opam (>= 2.0.0).
 
 The Mirage interface depends on changes in the not yet released tcpip library,
 in order to get the latest, you'll need to `opam repo add mirage-dev

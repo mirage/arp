@@ -1,0 +1,12 @@
+(executable
+ (name bench)
+ (libraries arp-mirage mirage-vnetif lwt ipaddr tcpip.ethif mirage-unix mirage-clock-unix mirage-types nocrypto nocrypto.unix lwt.unix))
+
+(alias
+ (name runbench)
+ (deps bench.exe)
+ (action (run ./bench.exe)))
+
+(alias
+ (name runtest)
+ (deps bench.exe))

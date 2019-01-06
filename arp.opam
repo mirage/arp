@@ -1,0 +1,29 @@
+opam-version: "2.0"
+maintainer: "Hannes Mehnert <hannes@mehnert.org>"
+authors: ["Hannes Mehnert <hannes@mehnert.org>"]
+homepage: "https://github.com/hannesm/arp"
+doc: "https://hannesm.github.io/arp/doc"
+dev-repo: "git+https://github.com/hannesm/arp.git"
+bug-reports: "https://github.com/hannesm/arp/issues"
+license: "ISC"
+
+depends: [
+  "ocaml" {>= "4.04.2"}
+  "cstruct" {>= "2.2.0"}
+  "ipaddr" {>= "3.0.0"}
+  "macaddr"
+  "logs"
+  "ppx_bisect"
+  "alcotest" {with-test}
+  "nocrypto" {with-test}
+]
+build: [
+  ["dune" "subst"] {pinned}
+  ["dune" "build" "-p" name "-j" jobs]
+  ["dune" "runtest" "-p" name "-j" jobs] {with-test}
+]
+synopsis: "Address Resolution Protocol purely in OCaml"
+description: """
+ARP is an implementation of the address resolution protocol (RFC826) purely in
+OCaml.  It handles IPv4 protocol addresses and Ethernet hardware addresses only.
+"""

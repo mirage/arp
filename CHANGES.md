@@ -1,3 +1,7 @@
+## dev
+
+* port build system to Dune (@avsm)
+
 ## 0.2.3 (2019-01-04)
 
 * port to ipaddr 3.0.0

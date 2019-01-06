@@ -71,7 +71,7 @@ open Lwt.Infix
 module B = Basic_backend.Make
 module V = Vnetif.Make(B)
 module E = Ethif.Make(V)
-module A = Arpv4.Make(E)(Mclock)(OS.Time)
+module A = Arp.Make(E)(Mclock)(OS.Time)
 
 let c = ref 0
 let gen arp () =
