@@ -5,6 +5,7 @@ sudo: required
 env:
   global:
     - PACKAGE="arp-mirage"
+    - TESTS=true
   matrix:
     - OCAML_VERSION=4.04
     - OCAML_VERSION=4.05
