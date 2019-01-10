@@ -4,7 +4,9 @@ script: bash -ex .travis-opam.sh
 sudo: required
 env:
   global:
-    - PACKAGE="arp-mirage"
+    - PACKAGE="arp"
+    - DEPOPTS="arp-mirage"
+    - PINS="arp-mirage:."
     - TESTS=true
   matrix:
     - OCAML_VERSION=4.04
