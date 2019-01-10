@@ -2,7 +2,7 @@ opam-version: "2.0"
 maintainer: "Hannes Mehnert <hannes@mehnert.org>"
 authors: ["Hannes Mehnert <hannes@mehnert.org>"]
 homepage: "https://github.com/hannesm/arp"
-doc: "https://hannesm.github.io/arp/doc"
+doc: "https://hannesm.github.io/arp/"
 dev-repo: "git+https://github.com/hannesm/arp.git"
 bug-reports: "https://github.com/hannesm/arp/issues"
 license: "ISC"
@@ -13,7 +13,7 @@ depends: [
   "ipaddr" {>= "3.0.0"}
   "macaddr"
   "logs"
-  "ppx_bisect"
+  "bisect_ppx"
   "alcotest" {with-test}
   "nocrypto" {with-test}
 ]
