@@ -13,7 +13,7 @@ clean:
 
 COVERAGE=_build/default/_coverage
 coverage :
-	find . -name 'bisect*.out' | xargs rm -f
+	find _build/default/test -name 'bisect*.out' | xargs rm -f
 	BISECT_ENABLE=yes dune runtest --no-buffer -j 1 --force
 	@bisect-ppx-report \
 	    -I _build/default/ -html $(COVERAGE)/ \
