@@ -1,0 +1,26 @@
+opam-version: "2.0"
+maintainer: "Hannes Mehnert <hannes@mehnert.org>"
+authors: ["Hannes Mehnert <hannes@mehnert.org>"]
+homepage: "https://github.com/mirage/arp"
+doc: "https://mirage.github.io/arp/"
+dev-repo: "git+https://github.com/mirage/arp.git"
+bug-reports: "https://github.com/mirage/arp/issues"
+license: "ISC"
+synopsis: "Address Resolution Protocol for MirageOS"
+depends: [
+  "ocaml" {>= "4.04.2"}
+  "mirage-protocols-lwt"
+  "mirage-time-lwt"
+  "mirage-clock"
+  "mirage-protocols"
+  "tcpip" {>="2.8.0"}
+  "lwt"
+  "duration"
+  "arp" {>= "1.0.0"}
+  "mirage-vnetif" {with-test}
+]
+build: [
+  ["dune" "subst"] {pinned}
+  ["dune" "build" "-p" name "-j" jobs]
+  ["dune" "runtest" "-p" name "-j" jobs] {with-test}
+]

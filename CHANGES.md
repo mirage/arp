@@ -1,3 +1,21 @@
+## v1.0.0 (2019-01-14)
+
+* split opam package into two separate ones: a core
+  `arp` package and the `arp-mirage` implementation
+  for MirageOS that has more dependencies.  This
+  eliminates the use of depopts that was done previously
+  to build the Mirage layer. (#7 @avsm)
+
+* port build system to Dune (#7 @avsm). The `make coverage`
+  and `make bench` targets will do the job of the previous
+  topkg targets for those.
+
+* minor fixes to ocamldoc comments to be compatible with
+  odoc.
+
+* use mirage-random and mirage-random-test instead of a
+  nocrypto dependency in tests and bench (#7 @hannesm)
+
 ## 0.2.3 (2019-01-04)
 
 * port to ipaddr 3.0.0

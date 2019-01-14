@@ -111,6 +111,6 @@ type 'a qres =
     it is found, its value is [Mac mac].  If the [ip] is not in the cache,
     either some ['a] is waiting for it already, then the value is [Wait a],
     where [a] is produced by applying [merge (Some 'a)] to the waiting thing.
-    Otherwise, both an ARP request needs to be send out, and the value of [merge
-    None] is put into the cache, both as part of [RequestWait].  *)
+    Otherwise, both an ARP request needs to be send out, and the value of
+    [merge None] is put into the cache, both as part of [RequestWait].  *)
 val query : 'a t -> Ipaddr.V4.t -> ('a option -> 'a) -> 'a t * 'a qres

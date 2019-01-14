@@ -1,5 +1,7 @@
+module Test (R : Mirage_random.C) = struct
+
 let rec gen_ip () =
-  let buf = Nocrypto.Rng.generate 4 in
+  let buf = R.generate 4 in
   let ip = Ipaddr.V4.of_bytes_exn (Cstruct.to_string buf) in
   if ip = Ipaddr.V4.any || ip = Ipaddr.V4.broadcast then
     gen_ip ()
@@ -7,7 +9,7 @@ let rec gen_ip () =
     buf, ip
 
 let rec gen_mac () =
-  let buf = Nocrypto.Rng.generate 6 in
+  let buf = R.generate 6 in
   let mac = Macaddr.of_bytes_exn (Cstruct.to_string buf) in
   if mac = Macaddr.broadcast then
     gen_mac ()
@@ -23,7 +25,7 @@ let hdr =
   buf
 
 let gen_int () =
-  let buf = Nocrypto.Rng.generate 1 in
+  let buf = R.generate 1 in
   (buf, Cstruct.get_uint8 buf 0)
 
 let gen_op () =
@@ -60,18 +62,18 @@ let p =
 module Coding = struct
   let gen_op_arp () =
     let rec gen_op () =
-      let buf = Nocrypto.Rng.generate 2 in
+      let buf = R.generate 2 in
       match Cstruct.BE.get_uint16 buf 0 with
       | 1 | 2 -> gen_op ()
       | x -> (x, buf)
     in
-    let data = Nocrypto.Rng.generate 20
+    let data = R.generate 20
     and o, opb = gen_op ()
     in
     o, Cstruct.concat [ hdr ; opb ; data ]
 
   let rec gen_unhandled_arp () =
-    let open Nocrypto.Rng in
+    let open R in
     (* some consistency -- hlen and plen *)
     let htype = generate 2
     and ptype = generate 2
@@ -90,7 +92,7 @@ module Coding = struct
       gen_unhandled_arp ()
     else
       let rec gen_op () =
-        let buf = Nocrypto.Rng.generate 2 in
+        let buf = R.generate 2 in
         match Cstruct.BE.get_uint16 buf 0 with
         | 1 | 2 -> gen_op ()
         | _ -> buf
@@ -105,7 +107,7 @@ module Coding = struct
 
   let gen_short_arp () =
     let _, l = gen_int () in
-    Nocrypto.Rng.generate (l mod 28)
+    R.generate (l mod 28)
 
   let e =
     let module M = struct
@@ -628,7 +630,7 @@ module Handling = struct
     and ipaddr = gen_ip ()
     in
     let t, _garp = Arp_handler.create ~timeout:1 ~ipaddr mac in
-    let pkt = Nocrypto.Rng.generate 24 in
+    let pkt = R.generate 24 in
     let _, outp, w = Arp_handler.input t pkt in
     Alcotest.(check (option out) "nothing out" None outp) ;
     Alcotest.(check (option (pair m (list int))) "nothin woken up" None w)
@@ -862,6 +864,10 @@ let tests = [
   "Handler", Handling.handl_tsts ;
 ]
 
+end
+
+module T = Test(Mirage_random_test)
+
 let () =
-  Nocrypto_entropy_unix.initialize () ;
-  Alcotest.run "ARP tests" tests
+  Mirage_random_test.initialize () ;
+  Alcotest.run "ARP tests" T.tests
