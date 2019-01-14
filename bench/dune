@@ -4,9 +4,11 @@
 
 (alias
  (name runbench)
+ (package arp-mirage)
  (deps bench.exe)
  (action (run ./bench.exe)))
 
 (alias
  (name runtest)
+ (package arp-mirage)
  (deps bench.exe))
