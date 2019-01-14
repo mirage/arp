@@ -1,10 +1,10 @@
 opam-version: "2.0"
 maintainer: "Hannes Mehnert <hannes@mehnert.org>"
 authors: ["Hannes Mehnert <hannes@mehnert.org>"]
-homepage: "https://github.com/hannesm/arp"
-doc: "https://hannesm.github.io/arp/"
-dev-repo: "git+https://github.com/hannesm/arp.git"
-bug-reports: "https://github.com/hannesm/arp/issues"
+homepage: "https://github.com/mirage/arp"
+doc: "https://mirage.github.io/arp/"
+dev-repo: "git+https://github.com/mirage/arp.git"
+bug-reports: "https://github.com/mirage/arp/issues"
 license: "ISC"
 synopsis: "Address Resolution Protocol for MirageOS"
 depends: [
