@@ -1,4 +1,4 @@
-## 1.0.0 (2019-01-06)
+## v1.0.0 (2019-01-14)
 
 * split opam package into two separate ones: a core
   `arp` package and the `arp-mirage` implementation
@@ -12,6 +12,9 @@
 
 * minor fixes to ocamldoc comments to be compatible with
   odoc.
+
+* use mirage-random and mirage-random-test instead of a
+  nocrypto dependency in tests and bench (#7 @hannesm)
 
 ## 0.2.3 (2019-01-04)
 

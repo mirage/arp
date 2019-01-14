@@ -1,5 +1,8 @@
 (* derived from ISC-licensed mirage-tcpip/lib_test/test_arp.ml *)
 
+let count2 = ref 0
+
+module Test (R : Mirage_random.C) = struct
 let hdr =
   let buf = Cstruct.create 6 in
   Cstruct.BE.set_uint16 buf 0 1 ;
@@ -9,7 +12,7 @@ let hdr =
   buf
 
 let gen_int () =
-  let buf = Nocrypto.Rng.generate 1 in
+  let buf = R.generate 1 in
   Cstruct.get_uint8 buf 0
 
 let gen_op () =
@@ -20,20 +23,20 @@ let gen_op () =
   buf
 
 let gen_arp () =
-  let addresses = Nocrypto.Rng.generate 20
+  let addresses = R.generate 20
   and opb = gen_op ()
   in
   Cstruct.concat [ hdr ; opb ; addresses ]
 
 let gen_req () =
-  let addresses = Nocrypto.Rng.generate 20
+  let addresses = R.generate 20
   and opb = Cstruct.create 2
   in
   Cstruct.BE.set_uint16 opb 0 1 ;
   Cstruct.concat [ hdr ; opb ; addresses ]
 
 let gen_ip () =
-  let last = Nocrypto.Rng.generate 1 in
+  let last = R.generate 1 in
   let ip = "\010\000\000" ^ (Cstruct.to_string last) in
   Ipaddr.V4.of_bytes_exn ip
 
@@ -41,7 +44,7 @@ let ip = Ipaddr.V4.of_string_exn "10.0.0.0"
 let mac = Macaddr.of_string_exn "00:de:ad:be:ef:00"
 
 let gen_rep () =
-  let omac = Nocrypto.Rng.generate 6
+  let omac = R.generate 6
   and oip = gen_ip ()
   and opb = Cstruct.create 2
   in
@@ -77,7 +80,7 @@ let c = ref 0
 let gen arp () =
   c := !c mod 100 ;
   match !c with
-  | x when x >= 00 && x < 10 -> Nocrypto.Rng.generate (gen_int ())
+  | x when x >= 00 && x < 10 -> R.generate (gen_int ())
   | x when x >= 10 && x < 20 -> gen_req ()
   | x when x >= 20 && x < 50 -> myreq
   | x when x >= 50 && x < 80 ->
@@ -90,8 +93,6 @@ let gen arp () =
     gen_rep ()
   | x when x >= 80 && x < 100 -> gen_arp ()
   | _ -> invalid_arg "bla"
-
-let count2 = ref 0
 
 let rec query arp () =
   incr count2 ;
@@ -128,7 +129,7 @@ let runit () =
   let count = ref 0 in
   Lwt.pick [
     (V.listen stack.netif (fun b -> incr count ; A.input stack.arp b) >|= fun _ -> ());
-    send other.netif (fun () -> Nocrypto.Rng.generate 28) () ;
+    send other.netif (fun () -> R.generate 28) () ;
     OS.Time.sleep_ns (Duration.of_sec 5)
   ] >>= fun () ->
   Printf.printf "%d random input\n%!" !count ;
@@ -168,11 +169,13 @@ let runit () =
     OS.Time.sleep_ns (Duration.of_sec 5)
   ] >|= fun () ->
   Printf.printf "%d queries (%d qs)\n%!" !count !count2
+end
 
+module T = Test(Mirage_random_test)
 let () =
-  Nocrypto_entropy_unix.initialize () ;
-  Lwt_main.run (runit ()) ;
+  Mirage_random_test.initialize () ;
+  Lwt_main.run (T.runit ()) ;
   count2 := 0 ;
-  Lwt_main.run (runit ()) ;
+  Lwt_main.run (T.runit ()) ;
   count2 := 0 ;
-  Lwt_main.run (runit ())
+  Lwt_main.run (T.runit ())

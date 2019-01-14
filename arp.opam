@@ -13,10 +13,12 @@ depends: [
   "ipaddr" {>= "3.0.0"}
   "macaddr"
   "logs"
-  "bisect_ppx"
+  "mirage-random" {with-test}
+  "mirage-random-test" {with-test}
+  "bisect_ppx" {with-test}
   "alcotest" {with-test}
-  "nocrypto" {with-test}
 ]
+conflicts: [ "arp-mirage" {< "1.0.0"} ]
 build: [
   ["dune" "subst"] {pinned}
   ["dune" "build" "-p" name "-j" jobs]

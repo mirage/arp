@@ -6,7 +6,7 @@ env:
   global:
     - PACKAGE="arp"
     - DEPOPTS="arp-mirage"
-    - PINS="arp-mirage:."
+    - PINS="arp.1.0.0:. arp-mirage.1.0.0:."
     - TESTS=true
   matrix:
     - OCAML_VERSION=4.04

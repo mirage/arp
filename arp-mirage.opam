@@ -16,7 +16,7 @@ depends: [
   "tcpip" {>="2.8.0"}
   "lwt"
   "duration"
-  "arp"
+  "arp" {>= "1.0.0"}
   "mirage-vnetif" {with-test}
 ]
 build: [
