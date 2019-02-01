@@ -18,7 +18,10 @@ depends: [
   "bisect_ppx" {with-test}
   "alcotest" {with-test}
 ]
-conflicts: [ "arp-mirage" {< "1.0.0"} ]
+conflicts: [
+  "arp-mirage" {< "1.0.0"}
+  "tcpip" {< "3.7.0"}
+]
 build: [
   ["dune" "subst"] {pinned}
   ["dune" "build" "-p" name "-j" jobs]

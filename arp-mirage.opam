@@ -26,6 +26,9 @@ depends: [
   "mirage-random-test" {with-test}
   "mirage-unix" {with-test}
 ]
+conflicts: [
+  "tcpip" {< "3.7.0"}
+]
 build: [
   ["dune" "subst"] {pinned}
   ["dune" "build" "-p" name "-j" jobs]
