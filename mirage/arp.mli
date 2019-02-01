@@ -15,8 +15,8 @@
  *
  *)
 
-module Make (Ethif : Mirage_protocols_lwt.ETHIF) (Clock : Mirage_clock.MCLOCK) (Time : Mirage_time_lwt.S) : sig
+module Make (Ethif : Mirage_protocols_lwt.ETHIF) (Time : Mirage_time_lwt.S) : sig
   include Mirage_protocols_lwt.ARP
 
-  val connect : Ethif.t -> Clock.t -> t Lwt.t
+  val connect : Ethif.t -> t Lwt.t
 end

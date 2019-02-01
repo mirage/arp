@@ -20,15 +20,14 @@ open Lwt.Infix
 
 let logsrc = Logs.Src.create "ARP" ~doc:"Mirage ARP handler"
 
-module Make (Ethif : Mirage_protocols_lwt.ETHIF) (Clock : Mirage_clock.MCLOCK) (Time : Mirage_time_lwt.S) = struct
+module Make (Ethif : Mirage_protocols_lwt.ETHIF) (Time : Mirage_time_lwt.S) = struct
 
   type 'a io = 'a Lwt.t
   type ipaddr = Ipaddr.V4.t
   type macaddr = Macaddr.t
-  type buffer = Cstruct.t
-  type repr = ((macaddr, Mirage_protocols.Arp.error) result Lwt.t *
-               (macaddr, Mirage_protocols.Arp.error) result Lwt.u) Arp_handler.t
   type error = Mirage_protocols.Arp.error
+  type buffer = Cstruct.t
+  type repr = ((macaddr, error) result Lwt.t * (macaddr, error) result Lwt.u) Arp_handler.t
   type t = {
     mutable state : repr ;
     ethif : Ethif.t ;
@@ -41,7 +40,7 @@ module Make (Ethif : Mirage_protocols_lwt.ETHIF) (Clock : Mirage_clock.MCLOCK) (
 
   let output t (buf, destination) =
     let ethif_packet = Ethif_packet.(Marshal.make_cstruct {
-        source = Ethif.mac t.ethif;
+        source = Arp_handler.mac t.state;
         destination;
         ethertype = Ethif_wire.ARP;
       }) in
@@ -51,8 +50,8 @@ module Make (Ethif : Mirage_protocols_lwt.ETHIF) (Clock : Mirage_clock.MCLOCK) (
       match Arp_packet.decode buf with
       | Ok p ->
         Logs.warn ~src:logsrc
-          (fun m -> m "error %a while outputting packet %a to %s"
-              Ethif.pp_error e Arp_packet.pp p (Macaddr.to_string destination))
+          (fun m -> m "error %a while outputting packet %a to %a"
+              Ethif.pp_error e Arp_packet.pp p Macaddr.pp destination)
       | Error ae ->
         Logs.warn ~src:logsrc
           (fun m -> m "error %a while outputing packet, and failing to parse our output %a"
@@ -83,10 +82,10 @@ module Make (Ethif : Mirage_protocols_lwt.ETHIF) (Clock : Mirage_clock.MCLOCK) (
     | None -> ()
     | Some (mac, (_, u)) -> Lwt.wakeup u (Ok mac)
 
-  let get_ips t = [Arp_handler.ip t.state]
+  let get_ips t = Arp_handler.ips t.state
 
   let create ?ipaddr t =
-    let mac = Ethif.mac t.ethif in
+    let mac = Arp_handler.mac t.state in
     let state, out = Arp_handler.create ~logsrc ?ipaddr mac in
     t.state <- state ;
     match out with
@@ -94,15 +93,15 @@ module Make (Ethif : Mirage_protocols_lwt.ETHIF) (Clock : Mirage_clock.MCLOCK) (
     | Some x -> output t x
 
   let add_ip t ipaddr =
-    if Ipaddr.V4.compare (Arp_handler.ip t.state) Ipaddr.V4.any = 0 then
-      create ~ipaddr t
-    else
+    match Arp_handler.ips t.state with
+    | [] -> create ~ipaddr t
+    | _ ->
       let state, out, wake = Arp_handler.alias t.state ipaddr in
       t.state <- state ;
       output t out >|= fun () ->
       match wake with
       | None -> ()
-      | Some (_, u) -> Lwt.wakeup u (Ok (Ethif.mac t.ethif))
+      | Some (_, u) -> Lwt.wakeup u (Ok (Arp_handler.mac t.state))
 
   let init_empty mac =
     let state, _ = Arp_handler.create ~logsrc mac in
@@ -110,7 +109,7 @@ module Make (Ethif : Mirage_protocols_lwt.ETHIF) (Clock : Mirage_clock.MCLOCK) (
 
   let set_ips t = function
     | [] ->
-      let mac = Ethif.mac t.ethif in
+      let mac = Arp_handler.mac t.state in
       let state = init_empty mac in
       t.state <- state ;
       Lwt.return_unit
@@ -135,7 +134,7 @@ module Make (Ethif : Mirage_protocols_lwt.ETHIF) (Clock : Mirage_clock.MCLOCK) (
     | Arp_handler.Wait (t, _) -> t
     | Arp_handler.Mac m -> Lwt.return (Ok m)
 
-  let connect ethif _ =
+  let connect ethif =
     let mac = Ethif.mac ethif in
     let state = init_empty mac in
     let t = { ethif; state; ticking = true} in

@@ -63,8 +63,11 @@ val pp : Format.formatter -> 'a t -> unit
 
 (** {2 Predicates} *)
 
-(** [ip t] is [ip], the configured IPv4 address. *)
-val ip : 'a t -> Ipaddr.V4.t
+(** [ips t] is [ips], the advertised IPv4 addresses. *)
+val ips : 'a t -> Ipaddr.V4.t list
+
+(** [mac t] is [mac], the mac address used by the ARP handler. *)
+val mac : 'a t -> Macaddr.t
 
 (** [in_cache t ip] is [mac option], a MAC address if the ARP cache contains an
     entry, [None] otherwise. *)

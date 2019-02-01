@@ -16,7 +16,13 @@ type 'a t = {
   logsrc : Logs.src
 }
 
-let ip t = t.ip
+let ips t =
+  M.fold (fun ip entry acc -> match entry with
+      | Static (_, true) -> ip :: acc
+      | _ -> acc)
+    t.cache []
+
+let mac t = t.mac
 
 (*BISECT-IGNORE-BEGIN*)
 let pp_entry now k pp =

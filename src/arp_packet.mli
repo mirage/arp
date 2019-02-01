@@ -24,6 +24,9 @@ type t = {
 (** [pp ppf t] prints the frame [t] on [ppf]. *)
 val pp : Format.formatter -> t -> unit
 
+(** [equal a b] returns [true] if frames [a] and [b] are equal, [false] otherwise. *)
+val equal : t -> t -> bool
+
 (** The type of possible errors during decoding
 
     - [Too_short] if the provided buffer is not long enough
