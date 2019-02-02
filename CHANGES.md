@@ -1,4 +1,4 @@
-## v1.0.0 (2019-01-14)
+## v1.0.0 (2019-02-02)
 
 * split opam package into two separate ones: a core
   `arp` package and the `arp-mirage` implementation
@@ -15,6 +15,11 @@
 
 * use mirage-random and mirage-random-test instead of a
   nocrypto dependency in tests and bench (#7 @hannesm)
+
+* import tests from mirage-tcpip (#8 @hannesm)
+
+* depend on the ethernet opam package, no longer provided
+  by tcpip >3.7.0 (#9 @hannesm)
 
 ## 0.2.3 (2019-01-04)
 
