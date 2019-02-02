@@ -4,14 +4,12 @@ script: bash -ex .travis-opam.sh
 sudo: required
 env:
   global:
-    - PACKAGE="arp"
-    - DEPOPTS="arp-mirage"
     - PINS="arp.1.0.0:. arp-mirage.1.0.0:."
     - TESTS=true
   matrix:
-    - OCAML_VERSION=4.04
-    - OCAML_VERSION=4.05
-    - OCAML_VERSION=4.06
-    - OCAML_VERSION=4.07
+    - OCAML_VERSION=4.04 PACKAGE="arp-mirage"
+    - OCAML_VERSION=4.05 PACKAGE="arp"
+    - OCAML_VERSION=4.06 PACKAGE="arp-mirage"
+    - OCAML_VERSION=4.07 PACKAGE="arp"
 notifications:
   email: false

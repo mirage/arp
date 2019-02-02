@@ -27,6 +27,13 @@ type t = {
   target_ip : Ipaddr.V4.t;
 }
 
+let equal a b =
+  op_to_int a.operation = op_to_int b.operation &&
+  Macaddr.compare a.source_mac b.source_mac = 0 &&
+  Ipaddr.V4.compare a.source_ip b.source_ip = 0 &&
+  Macaddr.compare a.target_mac b.target_mac = 0 &&
+  Ipaddr.V4.compare a.target_ip b.target_ip = 0
+
 type error =
   | Too_short
   | Unusable
@@ -35,10 +42,12 @@ type error =
 (*BISECT-IGNORE-BEGIN*)
 let pp fmt t =
   if t.operation = Request then
-    Format.fprintf fmt "ARP request, who has %a tell %a"
+    Format.fprintf fmt "ARP request from %a to %a, who has %a tell %a"
+      Macaddr.pp t.source_mac Macaddr.pp t.target_mac
       Ipaddr.V4.pp t.target_ip Ipaddr.V4.pp t.source_ip
   else (* t.op = Reply *)
-    Format.fprintf fmt "ARP reply, %a is at %a"
+    Format.fprintf fmt "ARP reply from %a to %a, %a is at %a"
+      Macaddr.pp t.source_mac Macaddr.pp t.target_mac
       Ipaddr.V4.pp t.source_ip Macaddr.pp t.source_mac
 
 let pp_error ppf = function

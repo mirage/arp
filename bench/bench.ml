@@ -74,7 +74,7 @@ open Lwt.Infix
 module B = Basic_backend.Make
 module V = Vnetif.Make(B)
 module E = Ethif.Make(V)
-module A = Arp.Make(E)(Mclock)(OS.Time)
+module A = Arp.Make(E)(OS.Time)
 
 let c = ref 0
 let gen arp () =
@@ -112,8 +112,7 @@ let get_arp ?(backend = B.create ~use_async_readers:true
                 ~yield:(fun() -> Lwt_main.yield ()) ()) () =
   V.connect backend >>= fun netif ->
   E.connect netif >>= fun ethif ->
-  Mclock.connect () >>= fun mclock ->
-  A.connect ethif mclock >>= fun arp ->
+  A.connect ethif >>= fun arp ->
   Lwt.return { backend; netif; ethif; arp }
 
 let rec send netif gen () =

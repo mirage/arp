@@ -198,7 +198,7 @@ module Handling = struct
   let m =
     let module M = struct
       type t = Macaddr.t
-      let pp ppf m = Format.pp_print_string ppf (Macaddr.to_string m)
+      let pp = Macaddr.pp
       let equal a b = Macaddr.compare a b = 0
     end in
     (module M : Alcotest.TESTABLE with type t = M.t)
@@ -229,7 +229,7 @@ module Handling = struct
     in
     Alcotest.(check bool "create has good GARP" true
                 (Cstruct.equal (Arp_packet.encode (garp_of ipaddr mac)) (fst garp))) ;
-    Alcotest.(check i "ip is sensible" ipaddr (Arp_handler.ip t)) ;
+    Alcotest.(check (list i) "ip is sensible" [ipaddr] (Arp_handler.ips t)) ;
     Alcotest.(check (option m) "own entry is in cache"
                 (Some mac) (Arp_handler.in_cache t ipaddr)) ;
     Alcotest.(check (option m) "any is not in cache" None
@@ -242,7 +242,7 @@ module Handling = struct
     and ipaddr = gen_ip ()
     in
     let t, _garp = Arp_handler.create ~ipaddr mac in
-    Alcotest.(check i "ip is sensible" ipaddr (Arp_handler.ip t)) ;
+    Alcotest.(check (list i) "ip is sensible" [ipaddr] (Arp_handler.ips t)) ;
     Alcotest.(check (option m) "own entry is in cache"
                 (Some mac) (Arp_handler.in_cache t ipaddr)) ;
     let t = Arp_handler.remove t ipaddr in
@@ -254,7 +254,7 @@ module Handling = struct
     and ipaddr = gen_ip ()
     in
     let t, _garp = Arp_handler.create ~ipaddr mac in
-    Alcotest.(check i "ip is sensible" ipaddr (Arp_handler.ip t)) ;
+    Alcotest.(check (list i) "ip is sensible" [ipaddr] (Arp_handler.ips t)) ;
     Alcotest.(check (option m) "own entry is in cache"
                 (Some mac) (Arp_handler.in_cache t ipaddr)) ;
     let t = Arp_handler.remove t Ipaddr.V4.any in
@@ -266,7 +266,7 @@ module Handling = struct
     and ipaddr = gen_ip ()
     in
     let t, _garp = Arp_handler.create ~ipaddr mac in
-    Alcotest.(check i "ip is sensible" ipaddr (Arp_handler.ip t)) ;
+    Alcotest.(check (list i) "ip is sensible" [ipaddr] (Arp_handler.ips t)) ;
     Alcotest.(check (option m) "own entry is in cache"
                 (Some mac) (Arp_handler.in_cache t ipaddr)) ;
     let t, _, _ = Arp_handler.alias t ipaddr in
@@ -373,7 +373,7 @@ module Handling = struct
     let module M = struct
       type t = Cstruct.t * Macaddr.t
       let pp ppf (cs, mac) =
-        Format.fprintf ppf "out: %d to %s" (Cstruct.len cs) (Macaddr.to_string mac)
+        Format.fprintf ppf "out: %d to %a" (Cstruct.len cs) Macaddr.pp mac
       let equal (acs, amac) (bcs, bmac) =
         Cstruct.equal acs bcs && Macaddr.compare amac bmac = 0
     end in
@@ -383,10 +383,10 @@ module Handling = struct
     let module M = struct
       type t = int list Arp_handler.qres
       let pp ppf = function
-        | Arp_handler.Mac mac -> Format.fprintf ppf "ok %s" (Macaddr.to_string mac)
+        | Arp_handler.Mac mac -> Format.fprintf ppf "ok %a" Macaddr.pp mac
         | Arp_handler.RequestWait ((cs, mac), xs) ->
-          Format.fprintf ppf "requestwait %d to %s, wait %s"
-            (Cstruct.len cs) (Macaddr.to_string mac)
+          Format.fprintf ppf "requestwait %d to %a, wait %s"
+            (Cstruct.len cs) Macaddr.pp mac
             (String.concat ", " (List.map string_of_int xs))
         | Arp_handler.Wait xs ->
           Format.fprintf ppf "wait %s"

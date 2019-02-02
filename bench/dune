@@ -1,6 +1,6 @@
 (executable
  (name bench)
- (libraries arp-mirage mirage-vnetif lwt ipaddr tcpip.ethif mirage-unix mirage-clock-unix mirage-types mirage-random mirage-random-test lwt.unix))
+ (libraries arp-mirage mirage-vnetif lwt ipaddr tcpip.ethif mirage-unix mirage-clock-unix mirage-random mirage-random-test lwt.unix))
 
 (alias
  (name runbench)

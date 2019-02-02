@@ -1,0 +1,5 @@
+(test
+  (name tests)
+  (package arp-mirage)
+  (libraries alcotest lwt.unix logs logs.fmt fmt mirage-flow mirage-vnetif
+             mirage-clock-unix duration tcpip.ethif arp arp-mirage cstruct))
