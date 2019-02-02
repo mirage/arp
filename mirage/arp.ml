@@ -39,10 +39,10 @@ module Make (Ethif : Mirage_protocols_lwt.ETHIF) (Time : Mirage_time_lwt.S) = st
   let probe_repeat_delay = Duration.of_ms 1500 (* per rfc5227, 2s >= probe_repeat_delay >= 1s *)
 
   let output t (buf, destination) =
-    let ethif_packet = Ethif_packet.(Marshal.make_cstruct {
+    let ethif_packet = Ethernet_packet.(Marshal.make_cstruct {
         source = Arp_handler.mac t.state;
         destination;
-        ethertype = Ethif_wire.ARP;
+        ethertype = Ethernet_wire.ARP;
       }) in
     Ethif.writev t.ethif [ethif_packet ; buf] >|= function
     | Ok () -> ()

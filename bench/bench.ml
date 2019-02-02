@@ -73,7 +73,7 @@ open Lwt.Infix
 
 module B = Basic_backend.Make
 module V = Vnetif.Make(B)
-module E = Ethif.Make(V)
+module E = Ethernet.Make(V)
 module A = Arp.Make(E)(OS.Time)
 
 let c = ref 0

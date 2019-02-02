@@ -13,7 +13,7 @@ end
 
 module B = Basic_backend.Make
 module V = Vnetif.Make(B)
-module E = Ethif.Make(V)
+module E = Ethernet.Make(V)
 module A = Arp.Make(E)(Fast_time)
 
 let src = Logs.Src.create "test_arp" ~doc:"Mirage ARP tester"
@@ -64,12 +64,12 @@ let check_response expected buf =
     Alcotest.(check packet) "parsed packet comparison" expected actual
 
 let check_ethif_response expected buf =
-  let open Ethif_packet in
+  let open Ethernet_packet in
   match Unmarshal.of_cstruct buf with
   | Error s -> Alcotest.fail s
   | Ok ({ethertype; _}, arp) ->
     match ethertype with
-    | Ethif_wire.ARP -> check_response expected arp
+    | Ethernet_wire.ARP -> check_response expected arp
     | _ -> Alcotest.fail "Ethernet packet with non-ARP ethertype"
 
 let garp source_mac source_ip =
@@ -88,7 +88,7 @@ let fail_on_receipt netif buf =
 
 let single_check netif expected =
   V.listen netif (fun buf ->
-      match Ethif_packet.Unmarshal.of_cstruct buf with
+      match Ethernet_packet.Unmarshal.of_cstruct buf with
       | Error _ -> failwith "sad face"
       | Ok (_, payload) ->
         check_response expected payload; V.disconnect netif) >|= fun _ -> ()
@@ -96,12 +96,12 @@ let single_check netif expected =
 let wrap_arp arp =
   let open Arp_packet in
   let e =
-    { Ethif_packet.source = arp.source_mac;
+    { Ethernet_packet.source = arp.source_mac;
       destination = arp.target_mac;
-      ethertype = Ethif_wire.ARP;
+      ethertype = Ethernet_wire.ARP;
     } in
-  let p = Ethif_packet.Marshal.make_cstruct e in
-  Format.printf "%a" Ethif_packet.pp e;
+  let p = Ethernet_packet.Marshal.make_cstruct e in
+  Format.printf "%a" Ethernet_packet.pp e;
   Cstruct.hexdump p;
   p
 
@@ -459,11 +459,11 @@ let nonsense_requests () =
 	  source_ip = inquirer_ip;
 	  target_ip = answerer_ip } in
     Cstruct.BE.set_uint16 buf 6 number;
-    let eth_header = { Ethif_packet.source = (V.mac inquirer.netif);
+    let eth_header = { Ethernet_packet.source = (V.mac inquirer.netif);
                        destination = Macaddr.broadcast;
-                       ethertype = Ethif_wire.ARP;
+                       ethertype = Ethernet_wire.ARP;
                        } in
-    Cstruct.concat [ Ethif_packet.Marshal.make_cstruct eth_header; buf ]
+    Cstruct.concat [ Ethernet_packet.Marshal.make_cstruct eth_header; buf ]
   in
   let requests = List.map request [0; 3; -1; 255; 256; 257; 65536] in
   let make_requests = Lwt_list.iter_s (fun l -> V.write inquirer.netif l >|= fun _ -> ()) requests in

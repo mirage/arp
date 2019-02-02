@@ -12,7 +12,7 @@ depends: [
   "mirage-protocols-lwt"
   "mirage-time-lwt"
   "mirage-protocols-lwt"
-  "tcpip" {>="2.8.0"}
+  "ethernet"
   "lwt"
   "duration"
   "arp" {>= "1.0.0"}
