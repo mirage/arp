@@ -5,6 +5,7 @@ sudo: required
 env:
   global:
     - PINS="arp.1.0.0:. arp-mirage.1.0.0:."
+    - EXTRA_REMOTES="https://github.com/mirage/mirage-dev.git#arp"
     - TESTS=true
   matrix:
     - OCAML_VERSION=4.04 PACKAGE="arp-mirage"
