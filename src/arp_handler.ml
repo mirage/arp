@@ -153,23 +153,31 @@ let handle_reply t source mac =
   match M.find source t.cache with
   | exception Not_found ->
     t, None, None
-  | Static _ ->
-    (*BISECT-IGNORE-BEGIN*)
-    Logs.info ~src:t.logsrc
-      (fun pp ->
-         pp "ignoring ARP reply for %a (static arp entry in cache)"
-           Ipaddr.V4.pp source) ;
-    (*BISECT-IGNORE-END*)
+  | Static (_, adv) ->
+    if adv && Macaddr.compare mac mac0 = 0 then
+      (*BISECT-IGNORE-BEGIN*)
+      Logs.info ~src:t.logsrc
+        (fun pp ->
+           pp "ignoring gratuitous ARP from %a using my IP address %a"
+             Macaddr.pp mac Ipaddr.V4.pp source)
+      (*BISECT-IGNORE-END*)
+    else
+      (*BISECT-IGNORE-BEGIN*)
+      Logs.info ~src:t.logsrc
+        (fun pp ->
+           pp "ignoring ARP reply for %a (static %sarp entry in cache)"
+             Ipaddr.V4.pp source (if adv then "advertised " else "")) ;
+      (*BISECT-IGNORE-END*)
     t, None, None
-  | Dynamic (m, _) when Macaddr.compare mac m = 0 -> extcache, None, None
   | Dynamic (m, _) ->
-    (*BISECT-IGNORE-BEGIN*)
-    Logs.warn ~src:t.logsrc
-      (fun pp -> pp "ARP for %a moved from %a to %a"
-          Ipaddr.V4.pp source
-          Macaddr.pp m
-          Macaddr.pp mac) ;
-    (*BISECT-IGNORE-END*)
+    if Macaddr.compare mac m <> 0 then
+      (*BISECT-IGNORE-BEGIN*)
+      Logs.warn ~src:t.logsrc
+        (fun pp -> pp "ARP for %a moved from %a to %a"
+            Ipaddr.V4.pp source
+            Macaddr.pp m
+            Macaddr.pp mac) ;
+      (*BISECT-IGNORE-END*)
     extcache, None, None
   | Pending (xs, _) -> extcache, None, Some (mac, xs)
 
