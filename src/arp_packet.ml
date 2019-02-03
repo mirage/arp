@@ -61,7 +61,7 @@ let ipv4_ethertype = 0x0800
 and ipv4_size = 4
 and ether_htype = 1
 and ether_size = 6
-and arp_frame_size = 28
+and size = 28
 
 let guard p e = if p then Ok () else Error e
 
@@ -70,7 +70,7 @@ let (>>=) x f = match x with
   | Error e -> Error e
 
 let decode buf =
-  let check_len buf = Cstruct.len buf >= arp_frame_size in
+  let check_len buf = Cstruct.len buf >= size in
   let check_hdr buf =
     Cstruct.BE.get_uint16 buf 0 = ether_htype &&
     Cstruct.BE.get_uint16 buf 2 = ipv4_ethertype &&
@@ -112,6 +112,6 @@ let encode_into t buf =
   [@@inline]
 
 let encode t =
-  let buf = Cstruct.create_unsafe arp_frame_size in
+  let buf = Cstruct.create_unsafe size in
   encode_into t buf;
   buf

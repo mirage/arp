@@ -21,6 +21,9 @@ type t = {
   target_ip : Ipaddr.V4.t;
 }
 
+(** [size] is the size of an ARP frame. *)
+val size : int
+
 (** [pp ppf t] prints the frame [t] on [ppf]. *)
 val pp : Format.formatter -> t -> unit
 
