@@ -68,9 +68,7 @@ let alias t ip =
     (fun pp -> pp "Sending gratuitous ARP for %a (%a)"
         Ipaddr.V4.pp ip Macaddr.pp t.mac) ;
   (*BISECT-IGNORE-END*)
-  { t with cache },
-  (Arp_packet.encode garp, Macaddr.broadcast),
-  pending t ip
+  { t with cache }, (garp, Macaddr.broadcast), pending t ip
 
 let create ?(timeout = 800) ?(retries = 5)
     ?(logsrc = Logs.Src.create "arp" ~doc:"ARP handler")
@@ -112,7 +110,7 @@ let request t ip =
     target_mac = target ; target_ip = ip
   }
   in
-  Arp_packet.encode request, target
+  request, target
 
 let reply arp m =
   let reply = {
@@ -120,7 +118,7 @@ let reply arp m =
     source_mac = m ; source_ip = arp.Arp_packet.target_ip ;
     target_mac = arp.Arp_packet.source_mac ; target_ip = arp.Arp_packet.source_ip ;
   } in
-  Arp_packet.encode reply, arp.Arp_packet.source_mac
+  reply, arp.Arp_packet.source_mac
 
 let tick t =
   let epoch = t.epoch in
@@ -232,7 +230,7 @@ let input t buf =
 type 'a qres =
   | Mac of Macaddr.t
   | Wait of 'a
-  | RequestWait of (Cstruct.t * Macaddr.t) * 'a
+  | RequestWait of (Arp_packet.t * Macaddr.t) * 'a
 
 let query t ip a =
   match M.find ip t.cache with

@@ -55,7 +55,7 @@ type 'a t
     @raise Invalid_argument is [timeout] is 0 or negative or [retries] is
     negative.  *)
 val create : ?timeout:int -> ?retries:int -> ?logsrc:Logs.src ->
-  ?ipaddr:Ipaddr.V4.t -> Macaddr.t -> 'a t * (Cstruct.t * Macaddr.t) option
+  ?ipaddr:Ipaddr.V4.t -> Macaddr.t -> 'a t * (Arp_packet.t * Macaddr.t) option
 
 (** [pp ppf t] prints the ARP handler [t] on [ppf] by iterating over all cache
     entries. *)
@@ -83,7 +83,7 @@ val static : 'a t -> Ipaddr.V4.t -> Macaddr.t -> 'a t * 'a option
 (** [alias t ip] is [t', out, as], where [t'] is [t] extended by a static ARP
     entry for [ip].  This entry will be used to answer further ARP requests.
     [out] is a gratuitous ARP frame.  The tasks waiting for [ip] are [as]. *)
-val alias : 'a t -> Ipaddr.V4.t -> 'a t * (Cstruct.t * Macaddr.t) * 'a option
+val alias : 'a t -> Ipaddr.V4.t -> 'a t * (Arp_packet.t * Macaddr.t) * 'a option
 
 (** [remove t ip] is [t'], where [ip] is no longer in the cache. *)
 val remove : 'a t -> Ipaddr.V4.t -> 'a t
@@ -93,14 +93,14 @@ val remove : 'a t -> Ipaddr.V4.t -> 'a t
 (** [tick t] is [t', requests, timeouts], which advances the state [t] into
     [t'].  Possibly retransmissions of ARP requests need to be done, provided in
     the [requests] list.  Timed out queries are in the [timeouts] list. *)
-val tick : 'a t -> 'a t * (Cstruct.t * Macaddr.t) list * 'a list
+val tick : 'a t -> 'a t * (Arp_packet.t * Macaddr.t) list * 'a list
 
 (** [input t buf] is [t', reply, w], which handles the input buffer [buf] in the
     state [t].  The state is transformed into [t'].  If it was an ARP request
     for one of our IPv4 addresses, an ARP reply should be send out [reply].  If
     the input was an awaited ARP reply, some elements [w] can be informed.  *)
 val input : 'a t -> Cstruct.t ->
-  ('a t * (Cstruct.t * Macaddr.t) option * (Macaddr.t * 'a) option)
+  ('a t * (Arp_packet.t * Macaddr.t) option * (Macaddr.t * 'a) option)
 
 (** The type returned by query, either a [Mac] and a mac address, or [Wait] for
     a reply, or [RequestWait], consisting of an ARP request to be send on the wire,
@@ -108,7 +108,7 @@ val input : 'a t -> Cstruct.t ->
 type 'a qres =
   | Mac of Macaddr.t
   | Wait of 'a
-  | RequestWait of (Cstruct.t * Macaddr.t) * 'a
+  | RequestWait of (Arp_packet.t * Macaddr.t) * 'a
 
 (** [query t ip merge] is [t', qres], which looks for the [ip] in the cache.  If
     it is found, its value is [Mac mac].  If the [ip] is not in the cache,
