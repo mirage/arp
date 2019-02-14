@@ -31,6 +31,7 @@ let second_ip = Ipaddr.V4.of_string_exn "192.168.3.10"
 let sample_mac = Macaddr.of_string_exn "10:9a:dd:c0:ff:ee"
 
 let packet = (module Arp_packet : Alcotest.TESTABLE with type t = Arp_packet.t)
+
 let ip =
   let module M = struct
     type t = Ipaddr.V4.t
@@ -46,6 +47,9 @@ let macaddr =
     let equal p q = (Macaddr.compare p q) = 0
   end in
   (module M : Alcotest.TESTABLE with type t = M.t)
+
+let header_size = Ethernet_wire.sizeof_ethernet
+let size = Arp_packet.size
 
 let check_header ~message expected actual =
   Alcotest.(check packet) message expected actual
@@ -87,26 +91,18 @@ let fail_on_receipt netif buf =
 	  Macaddr.pp (V.mac netif) Cstruct.hexdump_pp buf)
 
 let single_check netif expected =
-  V.listen netif (fun buf ->
+  V.listen netif ~header_size (fun buf ->
       match Ethernet_packet.Unmarshal.of_cstruct buf with
       | Error _ -> failwith "sad face"
       | Ok (_, payload) ->
         check_response expected payload; V.disconnect netif) >|= fun _ -> ()
 
-let wrap_arp arp buf =
-  let open Arp_packet in
-  let e =
-    { Ethernet_packet.source = arp.source_mac;
+(*  { Ethernet_packet.source = arp.source_mac;
       destination = arp.target_mac;
       ethertype = `ARP;
-    } in
-  match Ethernet_packet.Marshal.into_cstruct e buf with
-  | Ok () -> ()
-  | Error e -> failwith e
+    } *)
 
-
-let arp_reply ~from_netif ~to_netif ~from_ip ~to_ip buf =
-  let eth, arp = Cstruct.split buf Ethernet_wire.sizeof_ethernet in
+let arp_reply ~from_netif ~to_netif ~from_ip ~to_ip arp =
   let open Arp_packet in
   let a =
     { operation = Reply;
@@ -115,12 +111,10 @@ let arp_reply ~from_netif ~to_netif ~from_ip ~to_ip buf =
       source_ip = from_ip;
       target_ip = to_ip}
   in
-  wrap_arp a eth ;
   encode_into a arp ;
   Arp_packet.size
 
-let arp_request ~from_netif ~to_mac ~from_ip ~to_ip buf =
-  let eth, arp = Cstruct.split buf Ethernet_wire.sizeof_ethernet in
+let arp_request ~from_netif ~to_mac ~from_ip ~to_ip arp =
   let open Arp_packet in
   let a =
     { operation = Request;
@@ -129,7 +123,6 @@ let arp_request ~from_netif ~to_mac ~from_ip ~to_ip buf =
       source_ip = from_ip;
       target_ip = to_ip}
   in
-  wrap_arp a eth ;
   encode_into a arp ;
   Arp_packet.size
 
@@ -195,11 +188,6 @@ let start_arp_listener stack () =
   in
   E.input ~arpv4 ~ipv4:noop ~ipv6:noop stack.ethif
 
-let output_then_disconnect ~speak:speak_netif ~disconnect:listen_netif bufs =
-  Lwt.join (List.map (fun b -> V.write speak_netif b >|= fun _ -> ()) bufs) >>= fun () ->
-  Lwt_unix.sleep 0.1 >>= fun () ->
-  V.disconnect listen_netif
-
 let not_in_cache ~listen probe arp ip =
   Lwt.pick [
     single_check listen probe;
@@ -262,7 +250,7 @@ let input_single_garp () =
   in
   timeout ~time:500 (
     Lwt.join [
-      (V.listen listen.netif one_and_done >|= fun _ -> ());
+      (V.listen listen.netif ~header_size one_and_done >|= fun _ -> ());
       Time.sleep_ns (Duration.of_ms 100) >>= fun () ->
       Lwt.async (fun () -> A.query listen.arp first_ip >|= ignore) ;
       A.set_ips speak.arp [ first_ip ];
@@ -279,15 +267,17 @@ let input_single_garp () =
 let input_single_unicast () =
   two_arp () >>= fun (listen, speak) ->
   (* contrive to make a reply packet for the listener to hear *)
-  let for_listener = arp_reply
-     ~from_netif:speak.netif ~to_netif:listen.netif ~from_ip:first_ip ~to_ip:second_ip
+  let for_listener =
+    arp_reply
+      ~from_netif:speak.netif ~to_netif:listen.netif
+      ~from_ip:first_ip ~to_ip:second_ip
   in
   let listener = start_arp_listener listen () in
   timeout ~time:500 (
   Lwt.choose [
-    (V.listen listen.netif listener >|= fun _ -> ());
+    (V.listen listen.netif ~header_size listener >|= fun _ -> ());
     Time.sleep_ns (Duration.of_ms 2) >>= fun () ->
-    V.write speak.netif for_listener >>= fun _ ->
+    E.write speak.ethif (V.mac listen.netif) `ARP ~size for_listener >>= fun _ ->
     query_and_no_response listen.arp first_ip
   ])
 
@@ -307,10 +297,10 @@ let input_resolves_wait () =
   in
   timeout ~time:5000 (
     Lwt.join [
-      (V.listen listen.netif listener >|= fun _ -> ());
+      (V.listen listen.netif ~header_size listener >|= fun _ -> ());
       query_then_disconnect;
       Time.sleep_ns (Duration.of_ms 1) >>= fun () ->
-      V.write speak.netif for_listener >|= function
+      E.write speak.ethif (V.mac listen.netif) `ARP ~size for_listener >|= function
       | Ok x -> x
       | Error _ -> failf "ethernet write failed"
     ]
@@ -329,7 +319,7 @@ let input_replaces_old () =
   Lwt.async (fun () -> A.query listen.arp first_ip >|= ignore) ;
   Lwt.async (fun () ->
       Log.debug (fun f -> f "arp listener started");
-      V.listen listen.netif (start_arp_listener listen ()));
+      V.listen listen.netif ~header_size (start_arp_listener listen ()));
   timeout ~time:2000 (
     set_and_check ~listener:listen.arp ~claimant:claimant_1 first_ip >>= fun () ->
     set_and_check ~listener:listen.arp ~claimant:claimant_2 first_ip >>= fun () ->
@@ -348,7 +338,7 @@ let entries_expire () =
   in
   (* query for IP to accept responses *)
   Lwt.async (fun () -> A.query listen.arp first_ip >|= ignore) ;
-  Lwt.async (fun () -> V.listen listen.netif (start_arp_listener listen ()));
+  Lwt.async (fun () -> V.listen listen.netif ~header_size (start_arp_listener listen ()));
   let test =
     Time.sleep_ns (Duration.of_ms 10) >>= fun () ->
     set_and_check ~listener:listen.arp ~claimant:speak first_ip >>= fun () ->
@@ -383,7 +373,7 @@ let query_retries () =
     | Ok _ -> failf "got result from query for %a, erroneously" Ipaddr.V4.pp first_ip
   in
   Lwt.pick [
-    (V.listen listen.netif listener >|= fun _ -> ());
+    (V.listen listen.netif ~header_size listener >|= fun _ -> ());
     Time.sleep_ns (Duration.of_ms 2) >>= ask;
     Time.sleep_ns (Duration.of_sec 6) >>= fun () ->
     fail "query didn't succeed or fail within 6s"
@@ -410,17 +400,17 @@ let requests_are_responded_to () =
     V.disconnect close_netif
   in
   let arp_listener =
-    V.listen answerer.netif (start_arp_listener answerer ()) >|= fun _ -> ()
+    V.listen answerer.netif ~header_size (start_arp_listener answerer ()) >|= fun _ -> ()
   in
   timeout ~time:1000 (
     Lwt.join [
       (* listen for responses and check them against an expected result *)
-      (V.listen inquirer.netif (listener inquirer.netif) >|= fun _ -> ());
+      (V.listen inquirer.netif ~header_size (listener inquirer.netif) >|= fun _ -> ());
       (* start the usual ARP listener, which should respond to requests *)
       arp_listener;
       (* send a request for the ARP listener to respond to *)
       Time.sleep_ns (Duration.of_ms 100) >>= fun () ->
-      V.write inquirer.netif request >>= fun _ ->
+      E.write inquirer.ethif Macaddr.broadcast `ARP ~size request >>= fun _ ->
       Time.sleep_ns (Duration.of_ms 100) >>= fun () ->
       V.disconnect answerer.netif
     ];
@@ -443,15 +433,15 @@ let requests_not_us () =
   let requests = List.map ask [ inquirer_ip; Ipaddr.V4.any;
                                 Ipaddr.V4.of_string_exn "255.255.255.255" ] in
   let make_requests =
-    Lwt_list.iter_s (fun b -> V.write inquirer.netif b >|= fun _ -> ())
+    Lwt_list.iter_s (fun b -> E.write inquirer.ethif Macaddr.broadcast `ARP ~size b >|= fun _ -> ())
       requests
   in
   let disconnect_listeners () =
     Lwt_list.iter_s (V.disconnect) [answerer.netif; inquirer.netif]
   in
   Lwt.join [
-    (V.listen answerer.netif (start_arp_listener answerer ()) >|= fun _ -> ());
-    (V.listen inquirer.netif (fail_on_receipt inquirer.netif) >|= fun _ -> ());
+    (V.listen answerer.netif ~header_size (start_arp_listener answerer ()) >|= fun _ -> ());
+    (V.listen inquirer.netif ~header_size (fail_on_receipt inquirer.netif) >|= fun _ -> ());
     make_requests >>= fun _ ->
     Time.sleep_ns (Duration.of_ms 100) >>=
     disconnect_listeners
@@ -461,9 +451,8 @@ let nonsense_requests () =
   let (answerer_ip, inquirer_ip) = (first_ip, second_ip) in
   three_arp () >>= fun (answerer, inquirer, checker) ->
   A.set_ips answerer.arp [ answerer_ip ] >>= fun () ->
-  let request number buf =
+  let request number arp =
     let open Arp_packet in
-    let eth, arp = Cstruct.split buf Ethernet_wire.sizeof_ethernet in
     encode_into
       { operation = Request;
 	source_mac = V.mac inquirer.netif;
@@ -471,28 +460,21 @@ let nonsense_requests () =
 	source_ip = inquirer_ip;
 	target_ip = answerer_ip } arp ;
     Cstruct.BE.set_uint16 arp 6 number;
-    (match Ethernet_packet.Marshal.into_cstruct
-             { Ethernet_packet.source = V.mac inquirer.netif;
-               destination = Macaddr.broadcast;
-               ethertype = `ARP;
-             } eth
-     with
-     | Ok () -> ()
-     | Error msg -> failwith msg) ;
-    Arp_packet.size + Ethernet_wire.sizeof_ethernet
+    Arp_packet.size
   in
   let requests = List.map request [0; 3; -1; 255; 256; 257; 65536] in
-  let make_requests = Lwt_list.iter_s (fun l -> V.write inquirer.netif l >|= fun _ -> ()) requests in
+  let make_requests =
+    Lwt_list.iter_s (fun l -> E.write inquirer.ethif Macaddr.broadcast `ARP ~size l >|= fun _ -> ()) requests in
   let expected_probe = Arp_packet.{ operation = Request;
                                     source_mac = V.mac answerer.netif;
                                     source_ip = answerer_ip;
                                     target_mac = Macaddr.broadcast;
                                     target_ip = inquirer_ip; }
   in
-  Lwt.async (fun () -> V.listen answerer.netif (start_arp_listener answerer ()));
+  Lwt.async (fun () -> V.listen answerer.netif ~header_size (start_arp_listener answerer ()));
   timeout ~time:1000 (
     Lwt.join [
-      (V.listen inquirer.netif (fail_on_receipt inquirer.netif) >|= fun _ -> ());
+      (V.listen inquirer.netif ~header_size (fail_on_receipt inquirer.netif) >|= fun _ -> ());
       make_requests >>= fun () ->
       V.disconnect inquirer.netif >>= fun () ->
       (* not sufficient to just check to see whether we've replied; it's equally

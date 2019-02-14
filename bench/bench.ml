@@ -113,10 +113,12 @@ let get_arp ?(backend = B.create ~use_async_readers:true
   A.connect ethif >>= fun arp ->
   Lwt.return { backend; netif; ethif; arp }
 
-let rec send netif gen () =
-  V.write netif ~size:Arp_packet.size gen >>= function
-  | Ok _ -> send netif gen ()
+let rec send ethernet gen () =
+  E.write ethernet Macaddr.broadcast `ARP ~size:Arp_packet.size gen >>= function
+  | Ok _ -> send ethernet gen ()
   | Error _ -> Lwt.return_unit
+
+let header_size = Ethernet_wire.sizeof_ethernet
 
 let runit () =
   Printf.printf "starting\n%!";
@@ -125,8 +127,8 @@ let runit () =
   A.set_ips stack.arp [ip] >>= fun () ->
   let count = ref 0 in
   Lwt.pick [
-    (V.listen stack.netif (fun b -> incr count ; A.input stack.arp b) >|= fun _ -> ());
-    send other.netif (fun b ->
+    (V.listen stack.netif ~header_size (fun b -> incr count ; A.input stack.arp b) >|= fun _ -> ());
+    send other.ethif (fun b ->
         let res = R.generate 28 in
         Cstruct.blit res 0 b 0 28 ;
         28) () ;
@@ -135,36 +137,36 @@ let runit () =
   Printf.printf "%d random input\n%!" !count ;
   count := 0 ;
   Lwt.pick [
-    (V.listen stack.netif (fun b -> incr count ; A.input stack.arp b) >|= fun _ -> ());
-    send other.netif gen_arp () ;
+    (V.listen stack.netif ~header_size (fun b -> incr count ; A.input stack.arp b) >|= fun _ -> ());
+    send other.ethif gen_arp () ;
     OS.Time.sleep_ns (Duration.of_sec 5)
   ] >>= fun () ->
   Printf.printf "%d random ARP input\n%!" !count ;
   count := 0 ;
   Lwt.pick [
-    (V.listen stack.netif (fun b -> incr count ; A.input stack.arp b) >|= fun _ -> ());
-    send other.netif gen_req () ;
+    (V.listen stack.netif ~header_size (fun b -> incr count ; A.input stack.arp b) >|= fun _ -> ());
+    send other.ethif gen_req () ;
     OS.Time.sleep_ns (Duration.of_sec 5)
   ] >>= fun () ->
   Printf.printf "%d requests\n%!" !count ;
   count := 0 ;
   Lwt.pick [
-    (V.listen stack.netif (fun b -> incr count ; A.input stack.arp b) >|= fun _ -> ());
-    send other.netif gen_rep () ;
+    (V.listen stack.netif ~header_size (fun b -> incr count ; A.input stack.arp b) >|= fun _ -> ());
+    send other.ethif gen_rep () ;
     OS.Time.sleep_ns (Duration.of_sec 5)
   ] >>= fun () ->
   Printf.printf "%d replies\n%!" !count ;
   count := 0 ;
   Lwt.pick [
-    (V.listen stack.netif (fun b -> incr count ; A.input stack.arp b) >|= fun _ -> ());
-    send other.netif (gen stack.arp) () ;
+    (V.listen stack.netif ~header_size (fun b -> incr count ; A.input stack.arp b) >|= fun _ -> ());
+    send other.ethif (gen stack.arp) () ;
     OS.Time.sleep_ns (Duration.of_sec 5)
   ] >>= fun () ->
   Printf.printf "%d mixed\n%!" !count ;
   count := 0 ;
   Lwt.pick [
-    (V.listen stack.netif (fun b -> incr count ; A.input stack.arp b) >|= fun _ -> ());
-    send other.netif gen_rep  () ;
+    (V.listen stack.netif ~header_size (fun b -> incr count ; A.input stack.arp b) >|= fun _ -> ());
+    send other.ethif gen_rep  () ;
     query stack.arp () ;
     OS.Time.sleep_ns (Duration.of_sec 5)
   ] >|= fun () ->
