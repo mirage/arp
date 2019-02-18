@@ -20,7 +20,7 @@ open Lwt.Infix
 
 let logsrc = Logs.Src.create "ARP" ~doc:"Mirage ARP handler"
 
-module Make (Ethif : Mirage_protocols_lwt.ETHIF) (Time : Mirage_time_lwt.S) = struct
+module Make (Ethernet : Mirage_protocols_lwt.ETHERNET) (Time : Mirage_time_lwt.S) = struct
 
   type 'a io = 'a Lwt.t
   type ipaddr = Ipaddr.V4.t
@@ -30,7 +30,7 @@ module Make (Ethif : Mirage_protocols_lwt.ETHIF) (Time : Mirage_time_lwt.S) = st
   type repr = ((macaddr, error) result Lwt.t * (macaddr, error) result Lwt.u) Arp_handler.t
   type t = {
     mutable state : repr ;
-    ethif : Ethif.t ;
+    ethif : Ethernet.t ;
     mutable ticking : bool ;
   }
 
@@ -40,13 +40,13 @@ module Make (Ethif : Mirage_protocols_lwt.ETHIF) (Time : Mirage_time_lwt.S) = st
 
   let output t (arp, destination) =
     let size = Arp_packet.size in
-    Ethif.write t.ethif destination `ARP ~size
+    Ethernet.write t.ethif destination `ARP ~size
       (fun b -> Arp_packet.encode_into arp b ; size) >|= function
     | Ok () -> ()
     | Error e ->
       Logs.warn ~src:logsrc
         (fun m -> m "error %a while outputting packet %a to %a"
-            Ethif.pp_error e Arp_packet.pp arp Macaddr.pp destination)
+            Ethernet.pp_error e Arp_packet.pp arp Macaddr.pp destination)
 
   let rec tick t () =
     if t.ticking then
@@ -126,7 +126,7 @@ module Make (Ethif : Mirage_protocols_lwt.ETHIF) (Time : Mirage_time_lwt.S) = st
     | Arp_handler.Mac m -> Lwt.return (Ok m)
 
   let connect ethif =
-    let mac = Ethif.mac ethif in
+    let mac = Ethernet.mac ethif in
     let state = init_empty mac in
     let t = { ethif; state; ticking = true} in
     Lwt.async (tick t);
