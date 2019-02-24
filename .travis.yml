@@ -6,7 +6,7 @@ env:
   global:
     - PINS="arp:. arp-mirage:."
     - TESTS=true
-    - EXTRA_REMOTES="https://github.com/mirage/mirage-dev.git#layering"
+    - EXTRA_REMOTES="https://github.com/mirage/mirage-dev.git"
   matrix:
     - OCAML_VERSION=4.04 PACKAGE="arp-mirage"
     - OCAML_VERSION=4.05 PACKAGE="arp"
