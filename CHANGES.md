@@ -1,3 +1,9 @@
+## v2.0.0 (2019-02-24)
+
+* provide Arp_packet.size
+* Arp_handler API changes: return Arp_packet.t instead of Cstruct.t
+* adapt to ethernet 2.0.0 changes
+
 ## v1.0.0 (2019-02-02)
 
 * split opam package into two separate ones: a core
