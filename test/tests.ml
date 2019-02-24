@@ -228,7 +228,8 @@ module Handling = struct
       | Some garp -> garp
     in
     Alcotest.(check bool "create has good GARP" true
-                (Cstruct.equal (Arp_packet.encode (garp_of ipaddr mac)) (fst garp))) ;
+                (Cstruct.equal (Arp_packet.encode (garp_of ipaddr mac))
+                   (Arp_packet.encode (fst garp)))) ;
     Alcotest.(check (list i) "ip is sensible" [ipaddr] (Arp_handler.ips t)) ;
     Alcotest.(check (option m) "own entry is in cache"
                 (Some mac) (Arp_handler.in_cache t ipaddr)) ;
@@ -369,13 +370,21 @@ module Handling = struct
     Alcotest.(check (option m) "own entry is no longer in cache" None
                 (Arp_handler.in_cache t ipaddr))
 
+  let packet =
+    let module M = struct
+      type t = Arp_packet.t
+      let pp = Arp_packet.pp
+      let equal = Arp_packet.equal
+    end in
+    (module M : Alcotest.TESTABLE with type t = M.t)
+
   let out =
     let module M = struct
-      type t = Cstruct.t * Macaddr.t
+      type t = Arp_packet.t * Macaddr.t
       let pp ppf (cs, mac) =
-        Format.fprintf ppf "out: %d to %a" (Cstruct.len cs) Macaddr.pp mac
+        Format.fprintf ppf "out: %a to %a" Arp_packet.pp cs Macaddr.pp mac
       let equal (acs, amac) (bcs, bmac) =
-        Cstruct.equal acs bcs && Macaddr.compare amac bmac = 0
+        Arp_packet.equal acs bcs && Macaddr.compare amac bmac = 0
     end in
     (module M : Alcotest.TESTABLE with type t = M.t)
 
@@ -385,8 +394,8 @@ module Handling = struct
       let pp ppf = function
         | Arp_handler.Mac mac -> Format.fprintf ppf "ok %a" Macaddr.pp mac
         | Arp_handler.RequestWait ((cs, mac), xs) ->
-          Format.fprintf ppf "requestwait %d to %a, wait %s"
-            (Cstruct.len cs) Macaddr.pp mac
+          Format.fprintf ppf "requestwait %a to %a, wait %s"
+            Arp_packet.pp cs Macaddr.pp mac
             (String.concat ", " (List.map string_of_int xs))
         | Arp_handler.Wait xs ->
           Format.fprintf ppf "wait %s"
@@ -395,7 +404,7 @@ module Handling = struct
         | Arp_handler.Mac a, Arp_handler.Mac b -> Macaddr.compare a b = 0
         | Arp_handler.RequestWait ((csa, maca), xsa),
           Arp_handler.RequestWait ((csb, macb), xsb) ->
-          Cstruct.equal csa csb && Macaddr.compare maca macb = 0 &&
+          Arp_packet.equal csa csb && Macaddr.compare maca macb = 0 &&
           List.length xsa = List.length xsb &&
           List.for_all (fun x -> List.mem x xsb) xsa
         | Arp_handler.Wait xsa, Arp_handler.Wait xsb ->
@@ -418,9 +427,9 @@ module Handling = struct
     Alcotest.check qres "own IP can be queried" (Arp_handler.Mac mac) res
 
   let query source_mac source_ip target_ip =
-    Arp_packet.encode { Arp_packet.operation = Arp_packet.Request ;
-                        source_mac ; source_ip ;
-                        target_mac = Macaddr.broadcast ; target_ip },
+    { Arp_packet.operation = Arp_packet.Request ;
+      source_mac ; source_ip ;
+      target_mac = Macaddr.broadcast ; target_ip },
     Macaddr.broadcast
 
   let handle_gen_request () =
@@ -584,12 +593,12 @@ module Handling = struct
     let other = gen_ip () in
     let omac = gen_mac () in
     let pkt, _ = query omac other ipaddr in
-    let _, outp, w = Arp_handler.input t pkt in
+    let _, outp, w = Arp_handler.input t (Arp_packet.encode pkt) in
     Alcotest.(check (option (pair m (list int))) "nothin woken up" None w) ;
     Alcotest.(check (option out) "request to us provokes a reply"
-                (Some (Arp_packet.encode { Arp_packet.operation = Arp_packet.Reply ;
-                                           source_mac = mac ; source_ip = ipaddr ;
-                                           target_mac = omac ; target_ip = other },
+                (Some ({ Arp_packet.operation = Arp_packet.Reply ;
+                         source_mac = mac ; source_ip = ipaddr ;
+                         target_mac = omac ; target_ip = other },
                        omac)) outp)
 
   let answer_req_unicast () =
@@ -607,9 +616,9 @@ module Handling = struct
     let _, outp, w = Arp_handler.input t pkt in
     Alcotest.(check (option (pair m (list int))) "nothin woken up" None w) ;
     Alcotest.(check (option out) "request to us provokes a reply"
-                (Some (Arp_packet.encode { Arp_packet.operation = Arp_packet.Reply ;
-                                           source_mac = mac ; source_ip = ipaddr ;
-                                           target_mac = omac ; target_ip = other },
+                (Some ({ Arp_packet.operation = Arp_packet.Reply ;
+                         source_mac = mac ; source_ip = ipaddr ;
+                         target_mac = omac ; target_ip = other },
                        omac)) outp)
 
   let not_answer_req () =
@@ -621,7 +630,7 @@ module Handling = struct
     let third = gen_ip () in
     let omac = gen_mac () in
     let pkt, _ = query omac other third in
-    let _, outp, w = Arp_handler.input t pkt in
+    let _, outp, w = Arp_handler.input t (Arp_packet.encode pkt) in
     Alcotest.(check (option out) "nothing out" None outp) ;
     Alcotest.(check (option (pair m (list int))) "nothin woken up" None w)
 
@@ -798,7 +807,7 @@ module Handling = struct
     and third_mac = gen_mac ()
     in
     let q, _ = query third_mac third other in
-    let _, outp, w = Arp_handler.input t q in
+    let _, outp, w = Arp_handler.input t (Arp_packet.encode q) in
     Alcotest.(check (option out) "request a dynamic entry is not answered" None outp) ;
     Alcotest.(check (option (pair m (list int))) "nothing woken up" None w)
 

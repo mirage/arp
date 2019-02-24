@@ -9,15 +9,15 @@ license: "ISC"
 synopsis: "Address Resolution Protocol for MirageOS"
 depends: [
   "ocaml" {>= "4.04.2"}
-  "mirage-protocols-lwt"
   "mirage-time-lwt"
-  "mirage-protocols-lwt"
-  "ethernet"
+  "mirage-protocols-lwt" {>= "2.0.0"}
   "lwt"
   "duration"
-  "arp" {>= "1.0.0"}
+  "arp" {>= "2.0.0"}
+  "mirage-profile" {>= "0.5"}
   "logs"
   "cstruct" {>= "2.2.0"}
+  "ethernet" {with-test & >= "2.0.0"}
   "fmt" {with-test}
   "mirage-vnetif" {with-test}
   "alcotest" {with-test}

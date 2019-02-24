@@ -38,24 +38,15 @@ module Make (Ethif : Mirage_protocols_lwt.ETHIF) (Time : Mirage_time_lwt.S) = st
 
   let probe_repeat_delay = Duration.of_ms 1500 (* per rfc5227, 2s >= probe_repeat_delay >= 1s *)
 
-  let output t (buf, destination) =
-    let ethif_packet = Ethernet_packet.(Marshal.make_cstruct {
-        source = Arp_handler.mac t.state;
-        destination;
-        ethertype = Ethernet_wire.ARP;
-      }) in
-    Ethif.writev t.ethif [ethif_packet ; buf] >|= function
+  let output t (arp, destination) =
+    let size = Arp_packet.size in
+    Ethif.write t.ethif destination `ARP ~size
+      (fun b -> Arp_packet.encode_into arp b ; size) >|= function
     | Ok () -> ()
     | Error e ->
-      match Arp_packet.decode buf with
-      | Ok p ->
-        Logs.warn ~src:logsrc
-          (fun m -> m "error %a while outputting packet %a to %a"
-              Ethif.pp_error e Arp_packet.pp p Macaddr.pp destination)
-      | Error ae ->
-        Logs.warn ~src:logsrc
-          (fun m -> m "error %a while outputing packet, and failing to parse our output %a"
-              Ethif.pp_error e Arp_packet.pp_error ae)
+      Logs.warn ~src:logsrc
+        (fun m -> m "error %a while outputting packet %a to %a"
+            Ethif.pp_error e Arp_packet.pp arp Macaddr.pp destination)
 
   let rec tick t () =
     if t.ticking then
