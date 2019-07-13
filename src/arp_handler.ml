@@ -52,7 +52,7 @@ let pending t ip =
   | Pending (a, _) -> Some a
   | _ -> None
 
-let mac0 = Macaddr.of_bytes_exn (Cstruct.to_string (Cstruct.create 6))
+let mac0 = Macaddr.of_octets_exn (Cstruct.to_string (Cstruct.create 6))
 
 let alias t ip =
   let cache = M.add ip (Static (t.mac, true)) t.cache in

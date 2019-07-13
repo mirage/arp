@@ -69,6 +69,10 @@ let (>>=) x f = match x with
   | Ok y -> f y
   | Error e -> Error e
 
+let (>>>=) x f = match x with
+  | Ok y -> f y
+  | Error (`Msg _) -> Error Too_short
+
 let decode buf =
   let check_len buf = Cstruct.len buf >= size in
   let check_hdr buf =
@@ -83,11 +87,10 @@ let decode buf =
   match int_to_op op with
   | None -> Error (Unknown_operation op)
   | Some operation ->
-    let source_mac = Macaddr.of_bytes_exn (Cstruct.to_string (Cstruct.sub buf 8 6))
-    and target_mac = Macaddr.of_bytes_exn (Cstruct.to_string (Cstruct.sub buf 18 6))
-    and source_ip = Ipaddr.V4.of_int32 (Cstruct.BE.get_uint32 buf 14)
-    and target_ip = Ipaddr.V4.of_int32 (Cstruct.BE.get_uint32 buf 24)
-    in
+    Macaddr_cstruct.of_cstruct (Cstruct.sub buf 8 6) >>>= fun source_mac ->
+    Macaddr_cstruct.of_cstruct (Cstruct.sub buf 18 6) >>>= fun target_mac ->
+    let source_ip = Ipaddr.V4.of_int32 (Cstruct.BE.get_uint32 buf 14) in
+    let target_ip = Ipaddr.V4.of_int32 (Cstruct.BE.get_uint32 buf 24) in
     Ok {
       operation ;
       source_mac; source_ip ;
@@ -105,9 +108,9 @@ let hdr =
 let encode_into t buf =
   Cstruct.blit hdr 0 buf 0 6 ;
   Cstruct.BE.set_uint16 buf 6 (op_to_int t.operation) ;
-  Cstruct.blit_from_string (Macaddr.to_bytes t.source_mac) 0 buf 8 6 ;
+  Cstruct.blit_from_string (Macaddr.to_octets t.source_mac) 0 buf 8 6 ;
   Cstruct.BE.set_uint32 buf 14 (Ipaddr.V4.to_int32 t.source_ip) ;
-  Cstruct.blit_from_string (Macaddr.to_bytes t.target_mac) 0 buf 18 6 ;
+  Cstruct.blit_from_string (Macaddr.to_octets t.target_mac) 0 buf 18 6 ;
   Cstruct.BE.set_uint32 buf 24 (Ipaddr.V4.to_int32 t.target_ip)
   [@@inline]
 

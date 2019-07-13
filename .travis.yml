@@ -12,5 +12,6 @@ env:
     - OCAML_VERSION=4.05 PACKAGE="arp"
     - OCAML_VERSION=4.06 PACKAGE="arp-mirage"
     - OCAML_VERSION=4.07 PACKAGE="arp"
+    - OCAML_VERSION=4.08 PACKAGE="arp" DEPOPTS="arp-mirage"
 notifications:
   email: false
