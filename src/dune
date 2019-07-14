@@ -10,5 +10,5 @@ let () =
  (public_name arp)
  (wrapped false)
  %s
- (libraries cstruct logs ipaddr macaddr macaddr-cstruct)) |}
+ (libraries cstruct logs ipaddr macaddr)) |}
  (if bisect then "(preprocess (pps bisect_ppx -conditional))" else "")

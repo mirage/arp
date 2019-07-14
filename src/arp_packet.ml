@@ -69,10 +69,6 @@ let (>>=) x f = match x with
   | Ok y -> f y
   | Error e -> Error e
 
-let (>>>=) x f = match x with
-  | Ok y -> f y
-  | Error (`Msg _) -> Error Too_short
-
 let decode buf =
   let check_len buf = Cstruct.len buf >= size in
   let check_hdr buf =
@@ -87,10 +83,10 @@ let decode buf =
   match int_to_op op with
   | None -> Error (Unknown_operation op)
   | Some operation ->
-    Macaddr_cstruct.of_cstruct (Cstruct.sub buf 8 6) >>>= fun source_mac ->
-    Macaddr_cstruct.of_cstruct (Cstruct.sub buf 18 6) >>>= fun target_mac ->
-    let source_ip = Ipaddr.V4.of_int32 (Cstruct.BE.get_uint32 buf 14) in
-    let target_ip = Ipaddr.V4.of_int32 (Cstruct.BE.get_uint32 buf 24) in
+    let source_mac = Macaddr.of_octets_exn (Cstruct.to_string (Cstruct.sub buf 8 6))
+    and target_mac = Macaddr.of_octets_exn (Cstruct.to_string (Cstruct.sub buf 18 6))
+    and source_ip = Ipaddr.V4.of_int32 (Cstruct.BE.get_uint32 buf 14)
+    and target_ip = Ipaddr.V4.of_int32 (Cstruct.BE.get_uint32 buf 24) in
     Ok {
       operation ;
       source_mac; source_ip ;
