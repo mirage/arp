@@ -81,7 +81,7 @@ let garp source_mac source_ip =
   {
     operation = Request;
     source_mac;
-    target_mac = Macaddr.of_bytes_exn "\000\000\000\000\000\000";
+    target_mac = Macaddr.of_octets_exn "\000\000\000\000\000\000";
     source_ip;
     target_ip = source_ip;
   }
