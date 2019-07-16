@@ -1,3 +1,7 @@
+## v2.1.0 (2019-07-16)
+
+* Update to ipaddr.4.0.0 interfaces (#16 @avsm)
+
 ## v2.0.0 (2019-02-24)
 
 * provide Arp_packet.size

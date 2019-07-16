@@ -2,7 +2,7 @@ module Test (R : Mirage_random.C) = struct
 
 let rec gen_ip () =
   let buf = R.generate 4 in
-  let ip = Ipaddr.V4.of_bytes_exn (Cstruct.to_string buf) in
+  let ip = Ipaddr.V4.of_octets_exn (Cstruct.to_string buf) in
   if ip = Ipaddr.V4.any || ip = Ipaddr.V4.broadcast then
     gen_ip ()
   else
@@ -10,7 +10,7 @@ let rec gen_ip () =
 
 let rec gen_mac () =
   let buf = R.generate 6 in
-  let mac = Macaddr.of_bytes_exn (Cstruct.to_string buf) in
+  let mac = Macaddr.of_octets_exn (Cstruct.to_string buf) in
   if mac = Macaddr.broadcast then
     gen_mac ()
   else
@@ -187,7 +187,7 @@ end
 
 module Handling = struct
   let garp_of ip mac =
-    let mac0 = Macaddr.of_bytes_exn (Cstruct.to_string (Cstruct.create 6)) in
+    let mac0 = Macaddr.of_octets_exn (Cstruct.to_string (Cstruct.create 6)) in
     { Arp_packet.operation = Arp_packet.Request ;
       source_ip = ip ; target_ip = ip ;
       source_mac = mac ; target_mac = mac0 }

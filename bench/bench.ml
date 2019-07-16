@@ -35,7 +35,7 @@ let gen_req buf =
 let gen_ip () =
   let last = R.generate 1 in
   let ip = "\010\000\000" ^ (Cstruct.to_string last) in
-  Ipaddr.V4.of_bytes_exn ip
+  Ipaddr.V4.of_octets_exn ip
 
 let ip = Ipaddr.V4.of_string_exn "10.0.0.0"
 let mac = Macaddr.of_string_exn "00:de:ad:be:ef:00"
@@ -46,9 +46,9 @@ let gen_rep buf =
   let omac = R.generate 6 in
   Cstruct.blit omac 0 buf 8 6 ;
   let oip = gen_ip () in
-  Cstruct.blit_from_string (Ipaddr.V4.to_bytes oip) 0 buf 14 4 ;
-  Cstruct.blit_from_string (Macaddr.to_bytes mac) 0 buf 18 6 ;
-  Cstruct.blit_from_string (Ipaddr.V4.to_bytes ip) 0 buf 24 4 ;
+  Cstruct.blit_from_string (Ipaddr.V4.to_octets oip) 0 buf 14 4 ;
+  Cstruct.blit_from_string (Macaddr.to_octets mac) 0 buf 18 6 ;
+  Cstruct.blit_from_string (Ipaddr.V4.to_octets ip) 0 buf 24 4 ;
   28
 
 let other_ip = Ipaddr.V4.of_string_exn "10.0.0.1"
@@ -57,10 +57,10 @@ let other_mac = Macaddr.of_string_exn "00:de:ad:be:ef:01"
 let myreq buf =
   hdr buf ;
   Cstruct.BE.set_uint16 buf 6 1 ;
-  Cstruct.blit_from_string (Macaddr.to_bytes other_mac) 0 buf 8 6 ;
-  Cstruct.blit_from_string (Ipaddr.V4.to_bytes other_ip) 0 buf 14 4 ;
-  Cstruct.blit_from_string (Macaddr.to_bytes mac) 0 buf 18 6 ;
-  Cstruct.blit_from_string (Ipaddr.V4.to_bytes ip) 0 buf 24 4 ;
+  Cstruct.blit_from_string (Macaddr.to_octets other_mac) 0 buf 8 6 ;
+  Cstruct.blit_from_string (Ipaddr.V4.to_octets other_ip) 0 buf 14 4 ;
+  Cstruct.blit_from_string (Macaddr.to_octets mac) 0 buf 18 6 ;
+  Cstruct.blit_from_string (Ipaddr.V4.to_octets ip) 0 buf 24 4 ;
   28
 
 open Lwt.Infix
