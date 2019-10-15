@@ -20,16 +20,11 @@ open Lwt.Infix
 
 let logsrc = Logs.Src.create "ARP" ~doc:"Mirage ARP handler"
 
-module Make (Ethernet : Mirage_protocols_lwt.ETHERNET) (Time : Mirage_time_lwt.S) = struct
+module Make (Ethernet : Mirage_protocols.ETHERNET) (Time : Mirage_time.S) = struct
 
-  type 'a io = 'a Lwt.t
-  type ipaddr = Ipaddr.V4.t
-  type macaddr = Macaddr.t
   type error = Mirage_protocols.Arp.error
-  type buffer = Cstruct.t
-  type repr = ((macaddr, error) result Lwt.t * (macaddr, error) result Lwt.u) Arp_handler.t
   type t = {
-    mutable state : repr ;
+    mutable state : ((Macaddr.t, error) result Lwt.t * (Macaddr.t, error) result Lwt.u) Arp_handler.t ;
     ethif : Ethernet.t ;
     mutable ticking : bool ;
   }
@@ -59,9 +54,7 @@ module Make (Ethernet : Mirage_protocols_lwt.ETHERNET) (Time : Mirage_time_lwt.S
     else
       Lwt.return_unit
 
-  let to_repr t = Lwt.return t.state
-
-  let pp = Arp_handler.pp
+  let pp ppf t = Arp_handler.pp ppf t.state
 
   let input t frame =
     let state, out, wake = Arp_handler.input t.state frame in

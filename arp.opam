@@ -8,7 +8,7 @@ bug-reports: "https://github.com/mirage/arp/issues"
 license: "ISC"
 
 depends: [
-  "ocaml" {>= "4.04.2"}
+  "ocaml" {>= "4.06.0"}
   "dune"
   "cstruct" {>= "2.2.0"}
   "ipaddr" {>= "4.0.0"}
@@ -18,9 +18,6 @@ depends: [
   "mirage-random-test" {with-test}
   "bisect_ppx" {with-test}
   "alcotest" {with-test}
-]
-conflicts: [
-  "arp-mirage" {< "1.0.0"}
 ]
 build: [
   ["dune" "subst"] {pinned}

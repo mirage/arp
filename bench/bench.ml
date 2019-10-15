@@ -2,7 +2,7 @@
 
 let count2 = ref 0
 
-module Test (R : Mirage_random.C) = struct
+module Test (R : Mirage_random.S) = struct
 let hdr buf =
   Cstruct.BE.set_uint16 buf 0 1 ;
   Cstruct.BE.set_uint16 buf 2 0x0800 ;

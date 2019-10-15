@@ -2,4 +2,4 @@
  (name arp_mirage)
  (public_name arp-mirage)
  (wrapped false)
- (libraries arp mirage-protocols mirage-protocols-lwt mirage-time-lwt lwt logs duration mirage-profile))
+ (libraries arp mirage-protocols mirage-time lwt logs duration mirage-profile))

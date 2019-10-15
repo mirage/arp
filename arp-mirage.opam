@@ -8,10 +8,10 @@ bug-reports: "https://github.com/mirage/arp/issues"
 license: "ISC"
 synopsis: "Address Resolution Protocol for MirageOS"
 depends: [
-  "ocaml" {>= "4.04.2"}
+  "ocaml" {>= "4.06.0"}
   "dune" {>= "1.0"}
-  "mirage-time-lwt"
-  "mirage-protocols-lwt" {>= "2.0.0"}
+  "mirage-time" {>= "2.0.0"}
+  "mirage-protocols" {>= "4.0.0"}
   "lwt"
   "duration"
   "arp" {= version}

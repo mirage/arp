@@ -15,8 +15,8 @@
  *
  *)
 
-module Make (Ethernet : Mirage_protocols_lwt.ETHERNET) (Time : Mirage_time_lwt.S) : sig
-  include Mirage_protocols_lwt.ARP
+module Make (Ethernet : Mirage_protocols.ETHERNET) (Time : Mirage_time.S) : sig
+  include Mirage_protocols.ARP
 
   val connect : Ethernet.t -> t Lwt.t
 end
