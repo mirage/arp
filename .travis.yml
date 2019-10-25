@@ -6,7 +6,7 @@ services:
   - docker
 env:
   global:
-    - PINS="arp:. arp-mirage:."
+    - PINS="arp:. arp-mirage:. mirage-vnetif:git+https://github.com/hannesm/mirage-vnetif.git#easy ethernet:git+https://github.com/hannesm/ethernet.git#easy mirage-random-test:git+https://github.com/hannesm/mirage-random-test.git#easy"
     - DISTRO=alpine
     - TESTS=true
   matrix:
