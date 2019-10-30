@@ -1,4 +1,4 @@
-module Test (R : Mirage_random.C) = struct
+module Test (R : Mirage_random.S) = struct
 
 let rec gen_ip () =
   let buf = R.generate 4 in

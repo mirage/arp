@@ -152,9 +152,8 @@ let three_arp () =
 let query_or_die arp ip expected_mac =
   A.query arp ip >>= function
   | Error `Timeout ->
-    A.to_repr arp >>= fun repr ->
     Log.warn (fun f -> f "Timeout querying %a. Table contents: %a"
-                 Ipaddr.V4.pp ip A.pp repr);
+                 Ipaddr.V4.pp ip A.pp arp);
     fail "ARP query failed when success was mandatory";
   | Ok mac ->
     Alcotest.(check macaddr) "mismatch for expected query value" expected_mac mac;
@@ -164,8 +163,7 @@ let query_or_die arp ip expected_mac =
 let query_and_no_response arp ip =
   A.query arp ip >>= function
   | Error `Timeout ->
-    A.to_repr arp >>= fun repr ->
-    Log.warn (fun f -> f "Timeout querying %a. Table contents: %a" Ipaddr.V4.pp ip A.pp repr);
+    Log.warn (fun f -> f "Timeout querying %a. Table contents: %a" Ipaddr.V4.pp ip A.pp arp);
     Lwt.return_unit
   | Ok _ -> failf "expected nothing, found something in cache"
   | Error e ->
@@ -175,8 +173,7 @@ let query_and_no_response arp ip =
 let set_and_check ~listener ~claimant ip =
   A.set_ips claimant.arp [ ip ] >>= fun () ->
   Log.debug (fun f -> f "Set IP for %a to %a" Macaddr.pp (V.mac claimant.netif) Ipaddr.V4.pp ip);
-  A.to_repr listener >>= fun repr ->
-  Logs.debug (fun f -> f "Listener table contents after IP set on claimant: %a" A.pp repr);
+  Logs.debug (fun f -> f "Listener table contents after IP set on claimant: %a" A.pp listener);
   query_or_die listener ip (V.mac claimant.netif)
 
 let start_arp_listener stack () =
