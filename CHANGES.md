@@ -1,3 +1,7 @@
+## v2.2.0 (2019-10-30)
+
+* adapt to mirage-protocols 4.0.0 changes (#17 @hannesm)
+
 ## v2.1.0 (2019-07-16)
 
 * Update to ipaddr.4.0.0 interfaces (#16 @avsm)
