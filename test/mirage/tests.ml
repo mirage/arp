@@ -316,7 +316,7 @@ let input_replaces_old () =
   Lwt.async (fun () -> A.query listen.arp first_ip >|= ignore) ;
   Lwt.async (fun () ->
       Log.debug (fun f -> f "arp listener started");
-      V.listen listen.netif ~header_size (start_arp_listener listen ()));
+      V.listen listen.netif ~header_size (start_arp_listener listen ()) >|= fun _ -> ());
   timeout ~time:2000 (
     set_and_check ~listener:listen.arp ~claimant:claimant_1 first_ip >>= fun () ->
     set_and_check ~listener:listen.arp ~claimant:claimant_2 first_ip >>= fun () ->
@@ -335,7 +335,7 @@ let entries_expire () =
   in
   (* query for IP to accept responses *)
   Lwt.async (fun () -> A.query listen.arp first_ip >|= ignore) ;
-  Lwt.async (fun () -> V.listen listen.netif ~header_size (start_arp_listener listen ()));
+  Lwt.async (fun () -> V.listen listen.netif ~header_size (start_arp_listener listen ()) >|= fun _ -> ());
   let test =
     Time.sleep_ns (Duration.of_ms 10) >>= fun () ->
     set_and_check ~listener:listen.arp ~claimant:speak first_ip >>= fun () ->
@@ -468,7 +468,7 @@ let nonsense_requests () =
                                     target_mac = Macaddr.broadcast;
                                     target_ip = inquirer_ip; }
   in
-  Lwt.async (fun () -> V.listen answerer.netif ~header_size (start_arp_listener answerer ()));
+  Lwt.async (fun () -> V.listen answerer.netif ~header_size (start_arp_listener answerer ()) >|= fun _ -> ());
   timeout ~time:1000 (
     Lwt.join [
       (V.listen inquirer.netif ~header_size (fail_on_receipt inquirer.netif) >|= fun _ -> ());

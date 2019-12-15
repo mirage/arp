@@ -86,7 +86,7 @@ let gen arp buf =
       (let rand = gen_int () in
        for _i = 0 to rand do
          let ip = gen_ip () in
-         Lwt.async (fun () -> A.query arp ip)
+         Lwt.async (fun () -> A.query arp ip >|= fun _ -> ())
        done) ;
     gen_rep buf
   | x when x >= 80 && x < 100 -> gen_arp buf
@@ -95,7 +95,7 @@ let gen arp buf =
 let rec query arp () =
   incr count2 ;
   let ip = gen_ip () in
-  Lwt.async (fun () -> A.query arp ip) ;
+  Lwt.async (fun () -> A.query arp ip >|= fun _ -> ());
   Time.sleep_ns (Duration.of_us 100) >>= fun () ->
   query arp ()
 
