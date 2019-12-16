@@ -1,3 +1,7 @@
+## v2.2.1 (2019-12-17)
+
+* adapt to lwt 5.0.0 change (#18 @hannesm)
+
 ## v2.2.0 (2019-10-30)
 
 * adapt to mirage-protocols 4.0.0 changes (#17 @hannesm)
