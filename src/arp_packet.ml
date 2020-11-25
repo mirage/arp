@@ -39,8 +39,7 @@ type error =
   | Unusable
   | Unknown_operation of Cstruct.uint16
 
-(*BISECT-IGNORE-BEGIN*)
-let pp fmt t =
+let[@coverage off] pp fmt t =
   if t.operation = Request then
     Format.fprintf fmt "ARP request from %a to %a, who has %a tell %a"
       Macaddr.pp t.source_mac Macaddr.pp t.target_mac
@@ -50,11 +49,10 @@ let pp fmt t =
       Macaddr.pp t.source_mac Macaddr.pp t.target_mac
       Ipaddr.V4.pp t.source_ip Macaddr.pp t.source_mac
 
-let pp_error ppf = function
+let[@coverage off] pp_error ppf = function
   | Too_short -> Format.pp_print_string ppf "frame too short (below 28 bytes)"
   | Unusable -> Format.pp_print_string ppf "ARP address types are not IPv4 and Ethernet"
   | Unknown_operation i -> Format.fprintf ppf "ARP message has unsupported operation %d" i
-(*BISECT-IGNORE-END*)
 
 (* may be defined elsewhere *)
 let ipv4_ethertype = 0x0800
