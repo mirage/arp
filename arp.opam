@@ -18,6 +18,7 @@ depends: [
   "mirage-protocols" {>= "4.0.0"}
   "lwt"
   "duration"
+  "mirage-profile" {>= "0.9"}
   "mirage-random" {with-test & >= "2.0.0"}
   "mirage-random-test" {with-test & >= "0.1.0"}
   "bisect_ppx" {dev & >= "2.5.0"}
