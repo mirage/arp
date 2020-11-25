@@ -1,14 +1,8 @@
-(* -*- tuareg -*- *)
-
-let bisect = try Sys.getenv "BISECT_ENABLE" = "yes" with _ -> false
-
-let () =
-  Jbuild_plugin.V1.send @@ Printf.sprintf {|
 (library
  (name arp)
  (synopsis "Address Resolution Protocol purely in OCaml")
  (public_name arp)
  (wrapped false)
- %s
- (libraries cstruct logs ipaddr macaddr)) |}
- (if bisect then "(preprocess (pps bisect_ppx -conditional))" else "")
+ (instrumentation
+  (backend bisect_ppx))
+ (libraries cstruct logs ipaddr macaddr))

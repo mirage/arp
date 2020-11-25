@@ -700,7 +700,9 @@ module Handling = struct
     let t, outp, w = Arp_handler.input t pkt in
     Alcotest.(check (option out) "nothing out" None outp) ;
     Alcotest.(check (option (pair m (list int))) "something woken up" (Some (omac, [1])) w) ;
-    Alcotest.(check (option m) "entry in cache" (Some omac) (Arp_handler.in_cache t other))
+    Alcotest.(check (option m) "entry in cache" (Some omac) (Arp_handler.in_cache t other)) ;
+    Alcotest.(check (list i) "ips do not include dynamic entries" [ipaddr] (Arp_handler.ips t))
+
 
   let reply_overriden () =
     let mac = gen_mac ()

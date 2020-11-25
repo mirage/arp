@@ -24,8 +24,7 @@ let ips t =
 
 let mac t = t.mac
 
-(*BISECT-IGNORE-BEGIN*)
-let pp_entry now k pp =
+let[@coverage off] pp_entry now k pp =
   function
   | Static (m, adv) ->
     let adv = if adv then " advertising" else "" in
@@ -37,14 +36,13 @@ let pp_entry now k pp =
     Format.fprintf pp "%a (incomplete, %d retries left)"
       Ipaddr.V4.pp k (retries - now)
 
-let pp pp t =
+let[@coverage off] pp pp t =
   Format.fprintf pp "mac %a ip %a entries %d timeout %d retries %d@."
     Macaddr.pp t.mac
     Ipaddr.V4.pp t.ip
     (M.cardinal t.cache)
     t.timeout t.retries ;
   M.iter (fun k v -> pp_entry t.epoch k pp v ; Format.pp_print_space pp ()) t.cache
-(*BISECT-IGNORE-END*)
 
 let pending t ip =
   match M.find ip t.cache with
@@ -63,11 +61,9 @@ let alias t ip =
       target_mac = mac0 ;
       source_ip = ip ; target_ip = ip })
   in
-  (*BISECT-IGNORE-BEGIN*)
   Logs.info ~src:t.logsrc
     (fun pp -> pp "Sending gratuitous ARP for %a (%a)"
         Ipaddr.V4.pp ip Macaddr.pp t.mac) ;
-  (*BISECT-IGNORE-END*)
   { t with cache }, (garp, Macaddr.broadcast), pending t ip
 
 let create ?(timeout = 800) ?(retries = 5)
@@ -124,20 +120,16 @@ let tick t =
   let epoch = t.epoch in
   let entry k v (cache, acc, r) = match v with
     | Dynamic (m, tick) when tick = epoch ->
-      (*BISECT-IGNORE-BEGIN*)
       Logs.debug ~src:t.logsrc
         (fun pp -> pp "removing ARP entry %a (mac %a)"
             Ipaddr.V4.pp k Macaddr.pp m) ;
-      (*BISECT-IGNORE-END*)
       M.remove k cache, acc, r
     | Dynamic (_, tick) when tick = succ epoch ->
       cache, request t k :: acc, r
     | Pending (a, retry) when retry = epoch ->
-      (*BISECT-IGNORE-BEGIN*)
       Logs.info ~src:t.logsrc
         (fun pp -> pp "ARP timeout after %d retries for %a"
             t.retries Ipaddr.V4.pp k) ;
-      (*BISECT-IGNORE-END*)
       M.remove k cache, acc, a :: r
     | Pending _ -> cache, request t k :: acc, r
     | _ -> cache, acc, r
@@ -155,29 +147,24 @@ let handle_reply t source mac =
     t, None, None
   | Static (_, adv) ->
     if adv && Macaddr.compare mac mac0 = 0 then
-      (*BISECT-IGNORE-BEGIN*)
       Logs.info ~src:t.logsrc
         (fun pp ->
            pp "ignoring gratuitous ARP from %a using my IP address %a"
-             Macaddr.pp mac Ipaddr.V4.pp source)
-      (*BISECT-IGNORE-END*)
+             Macaddr.pp mac Ipaddr.V4.pp source)[@coverage off]
     else
-      (*BISECT-IGNORE-BEGIN*)
       Logs.info ~src:t.logsrc
         (fun pp ->
            pp "ignoring ARP reply for %a (static %sarp entry in cache)"
-             Ipaddr.V4.pp source (if adv then "advertised " else "")) ;
-      (*BISECT-IGNORE-END*)
+             Ipaddr.V4.pp source (if adv then "advertised " else ""))
+      [@coverage off] ;
     t, None, None
   | Dynamic (m, _) ->
     if Macaddr.compare mac m <> 0 then
-      (*BISECT-IGNORE-BEGIN*)
       Logs.warn ~src:t.logsrc
         (fun pp -> pp "ARP for %a moved from %a to %a"
             Ipaddr.V4.pp source
             Macaddr.pp m
             Macaddr.pp mac) ;
-      (*BISECT-IGNORE-END*)
     extcache, None, None
   | Pending (xs, _) -> extcache, None, Some (mac, xs)
 
@@ -188,40 +175,33 @@ let handle_request t arp =
   in
   match M.find dest t.cache with
   | exception Not_found ->
-    (*BISECT-IGNORE-BEGIN*)
     Logs.debug ~src:t.logsrc
       (fun pp -> pp "ignoring ARP request for %a from %a (mac %a)"
           Ipaddr.V4.pp dest
           Ipaddr.V4.pp source
           Macaddr.pp arp.Arp_packet.source_mac) ;
-    (*BISECT-IGNORE-END*)
     t, None, None
   | Static (m, true) ->
-    (*BISECT-IGNORE-BEGIN*)
     Logs.debug ~src:t.logsrc
       (fun pp -> pp "replying to ARP request for %a from %a (mac %a)"
           Ipaddr.V4.pp dest
           Ipaddr.V4.pp source
           Macaddr.pp arp.Arp_packet.source_mac) ;
-    (*BISECT-IGNORE-END*)
     t, Some (reply arp m), None
   | _ ->
-    (*BISECT-IGNORE-BEGIN*)
     Logs.debug ~src:t.logsrc
       (fun pp -> pp "ignoring ARP request for %a from %a (mac %a)"
           Ipaddr.V4.pp dest
           Ipaddr.V4.pp source
-          Macaddr.pp arp.Arp_packet.source_mac) ;
-    (*BISECT-IGNORE-END*)
+          Macaddr.pp arp.Arp_packet.source_mac)
+    [@coverage off] ;
     t, None, None
 
 let input t buf =
   match Arp_packet.decode buf with
   | Error e ->
-    (*BISECT-IGNORE-BEGIN*)
     Logs.info ~src:t.logsrc
         (fun pp -> pp "Failed to parse ARP frame %a" Arp_packet.pp_error e) ;
-    (*BISECT-IGNORE-END*)
     t, None, None
   | Ok arp ->
     if

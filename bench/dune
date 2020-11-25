@@ -1,14 +1,4 @@
 (executable
  (name bench)
- (libraries arp-mirage mirage-vnetif lwt ipaddr ethernet mirage-time-unix mirage-clock-unix mirage-random mirage-random-test lwt.unix))
-
-(alias
- (name runbench)
- (package arp-mirage)
- (deps bench.exe)
- (action (run ./bench.exe)))
-
-(alias
- (name runtest)
- (package arp-mirage)
- (deps bench.exe))
+ (libraries arp-mirage mirage-vnetif lwt ipaddr ethernet mirage-time-unix
+   mirage-clock-unix mirage-random mirage-random-test lwt.unix))

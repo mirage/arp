@@ -9,7 +9,7 @@ license: "ISC"
 synopsis: "Address Resolution Protocol for MirageOS"
 depends: [
   "ocaml" {>= "4.06.0"}
-  "dune" {>= "1.0"}
+  "dune" {>= "2.7"}
   "mirage-time" {>= "2.0.0"}
   "mirage-protocols" {>= "4.0.0"}
   "lwt"
