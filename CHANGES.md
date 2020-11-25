@@ -1,3 +1,7 @@
+## v2.3.1 (2020-11-25)
+
+* Fix opam file to include mirage-profile dependency (#21 @hannesm)
+
 ## v2.3.0 (2020-11-25)
 
 * Update to dune 2 (#19 @hannesm)
