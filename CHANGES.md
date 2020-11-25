@@ -1,3 +1,8 @@
+## v2.3.0 (2020-11-25)
+
+* Update to dune 2 (#19 @hannesm)
+* Merge opam packages into a single one (#20 @hannesm)
+
 ## v2.2.1 (2019-12-17)
 
 * adapt to lwt 5.0.0 change (#18 @hannesm)
