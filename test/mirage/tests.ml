@@ -55,7 +55,7 @@ let check_header ~message expected actual =
   Alcotest.(check packet) message expected actual
 
 let fail = Alcotest.fail
-let failf fmt = Fmt.kstrf Alcotest.fail fmt
+let failf fmt = Fmt.kstrf (fun s -> Alcotest.fail s) fmt
 
 let timeout ~time t =
   let msg = Printf.sprintf "Timed out: didn't complete in %d milliseconds" time in
