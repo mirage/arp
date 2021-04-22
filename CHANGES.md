@@ -1,3 +1,8 @@
+## v2.3.2 (2021-04-22)
+
+* Compatibility with alcotest 1.4.0 (#22 @CraigFE)
+* Minor updates for CI (#23 @hannesm)
+
 ## v2.3.1 (2020-11-25)
 
 * Fix opam file to include mirage-profile dependency (#21 @hannesm)
