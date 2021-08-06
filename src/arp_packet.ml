@@ -68,7 +68,7 @@ let (>>=) x f = match x with
   | Error e -> Error e
 
 let decode buf =
-  let check_len buf = Cstruct.len buf >= size in
+  let check_len buf = Cstruct.length buf >= size in
   let check_hdr buf =
     Cstruct.BE.get_uint16 buf 0 = ether_htype &&
     Cstruct.BE.get_uint16 buf 2 = ipv4_ethertype &&
