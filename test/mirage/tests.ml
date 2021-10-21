@@ -339,12 +339,12 @@ let entries_expire () =
   let test =
     Time.sleep_ns (Duration.of_ms 10) >>= fun () ->
     set_and_check ~listener:listen.arp ~claimant:speak first_ip >>= fun () ->
-    (* sleep for 2s to make sure we hit `tick` often enough *)
-    Time.sleep_ns (Duration.of_sec 3) >>= fun () ->
+    (* sleep for 5s to make sure we hit `tick` often enough *)
+    Time.sleep_ns (Duration.of_sec 5) >>= fun () ->
     (* asking now should generate a query *)
     not_in_cache ~listen:speak.netif expected_arp_query listen.arp first_ip
   in
-  timeout ~time:5000 test
+  timeout ~time:7000 test
 
 (* RFC isn't strict on how many times to try, so we'll just say any number
    greater than 1 is fine *)
