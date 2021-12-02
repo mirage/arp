@@ -128,7 +128,7 @@ let arp_request ~from_netif ~to_mac ~from_ip ~to_ip arp =
 
 let get_arp ?backend () =
   let backend = match backend with
-    | None -> B.create ~use_async_readers:true ~yield:Lwt_main.yield ()
+    | None -> B.create ~use_async_readers:true ~yield:Lwt.pause ()
     | Some b -> b
   in
   V.connect backend >>= fun netif ->

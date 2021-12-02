@@ -107,7 +107,7 @@ type arp_stack = {
 }
 
 let get_arp ?(backend = B.create ~use_async_readers:true
-                ~yield:(fun() -> Lwt_main.yield ()) ()) () =
+                ~yield:(fun() -> Lwt.pause ()) ()) () =
   V.connect backend >>= fun netif ->
   E.connect netif >>= fun ethif ->
   A.connect ethif >>= fun arp ->
