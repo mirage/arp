@@ -16,20 +16,37 @@
  *
  *)
 
+module type S = sig
+  type t
+  val disconnect : t -> unit Lwt.t
+  type error = private [> `Timeout ]
+  val pp_error: error Fmt.t
+  val pp : t Fmt.t
+  val get_ips : t -> Ipaddr.V4.t list
+  val set_ips : t -> Ipaddr.V4.t list -> unit Lwt.t
+  val remove_ip : t -> Ipaddr.V4.t -> unit Lwt.t
+  val add_ip : t -> Ipaddr.V4.t -> unit Lwt.t
+  val query : t -> Ipaddr.V4.t -> (Macaddr.t, error) result Lwt.t
+  val input : t -> Cstruct.t -> unit Lwt.t
+end
+
 open Lwt.Infix
 
 let logsrc = Logs.Src.create "ARP" ~doc:"Mirage ARP handler"
 
-module Make (Ethernet : Mirage_protocols.ETHERNET) (Time : Mirage_time.S) = struct
+module Make (Ethernet : Ethernet.S) (Time : Mirage_time.S) = struct
 
-  type error = Mirage_protocols.Arp.error
+  type error = [
+    | `Timeout
+  ]
+  let pp_error ppf = function
+    | `Timeout -> Fmt.pf ppf "could not determine a link-level address for the IP address given"
+
   type t = {
     mutable state : ((Macaddr.t, error) result Lwt.t * (Macaddr.t, error) result Lwt.u) Arp_handler.t ;
     ethif : Ethernet.t ;
     mutable ticking : bool ;
   }
-
-  let pp_error = Mirage_protocols.Arp.pp_error
 
   let probe_repeat_delay = Duration.of_ms 1500 (* per rfc5227, 2s >= probe_repeat_delay >= 1s *)
 
