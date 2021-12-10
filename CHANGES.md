@@ -1,3 +1,8 @@
+## v3.0.0 (2021-12-10)
+
+* Include Mirage_protocols.ARP module type directly, remove dependency on
+  mirage-protocols (#27 @hannesm)
+
 ## v2.3.2 (2021-04-22)
 
 * Compatibility with alcotest 1.4.0 (#22 @CraigFE)
