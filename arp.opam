@@ -15,15 +15,14 @@ depends: [
   "macaddr" {>= "4.0.0"}
   "logs"
   "mirage-time" {>= "2.0.0"}
-  "mirage-protocols" {>= "4.0.0"}
   "lwt"
   "duration"
   "mirage-profile" {>= "0.9"}
+  "ethernet" {>= "3.0.0"}
+  "bisect_ppx" {dev & >= "2.5.0"}
   "mirage-random" {with-test & >= "2.0.0"}
   "mirage-random-test" {with-test & >= "0.1.0"}
-  "bisect_ppx" {dev & >= "2.5.0"}
   "alcotest" {with-test}
-  "ethernet" {with-test & >= "2.0.0"}
   "fmt" {with-test & >= "0.8.7"}
   "mirage-vnetif" {with-test & >= "0.5.0"}
   "mirage-clock-unix" {with-test & >= "3.0.0"}

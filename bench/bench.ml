@@ -118,7 +118,7 @@ let rec send ethernet gen () =
   | Ok _ -> send ethernet gen ()
   | Error _ -> Lwt.return_unit
 
-let header_size = Ethernet_wire.sizeof_ethernet
+let header_size = Ethernet.Packet.sizeof_ethernet
 
 let runit () =
   Printf.printf "starting\n%!";

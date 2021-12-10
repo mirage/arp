@@ -48,7 +48,7 @@ let macaddr =
   end in
   (module M : Alcotest.TESTABLE with type t = M.t)
 
-let header_size = Ethernet_wire.sizeof_ethernet
+let header_size = Ethernet.Packet.sizeof_ethernet
 let size = Arp_packet.size
 
 let check_header ~message expected actual =
@@ -68,8 +68,8 @@ let check_response expected buf =
     Alcotest.(check packet) "parsed packet comparison" expected actual
 
 let check_ethif_response expected buf =
-  let open Ethernet_packet in
-  match Unmarshal.of_cstruct buf with
+  let open Ethernet.Packet in
+  match of_cstruct buf with
   | Error s -> Alcotest.fail s
   | Ok ({ethertype; _}, arp) ->
     match ethertype with
@@ -92,7 +92,7 @@ let fail_on_receipt netif buf =
 
 let single_check netif expected =
   V.listen netif ~header_size (fun buf ->
-      match Ethernet_packet.Unmarshal.of_cstruct buf with
+      match Ethernet.Packet.of_cstruct buf with
       | Error _ -> failwith "sad face"
       | Ok (_, payload) ->
         check_response expected payload; V.disconnect netif) >|= fun _ -> ()
