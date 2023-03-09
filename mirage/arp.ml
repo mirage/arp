@@ -125,7 +125,7 @@ module Make (Ethernet : Ethernet.S) (Time : Mirage_time.S) = struct
 
   let query t ip =
     let merge = function
-      | None -> MProf.Trace.named_wait "ARP response"
+      | None -> Lwt.wait ()
       | Some a -> a
     in
     let state, res = Arp_handler.query t.state ip merge in
@@ -133,7 +133,7 @@ module Make (Ethernet : Ethernet.S) (Time : Mirage_time.S) = struct
     match res with
     | Arp_handler.RequestWait (pkt, (tr, _)) -> output t pkt >>= fun () -> tr
     | Arp_handler.Wait (t, _) -> t
-    | Arp_handler.Mac m -> Lwt.return (Ok m)
+    | Arp_handler.Mac mac -> Lwt.return (Ok mac)
 
   let connect ethif =
     let mac = Ethernet.mac ethif in
