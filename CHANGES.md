@@ -1,3 +1,7 @@
+## v3.1.0 (2023-03-12)
+
+* Remove mirage-profile dependency (#28 @hannesm)
+
 ## v3.0.0 (2021-12-10)
 
 * Include Mirage_protocols.ARP module type directly, remove dependency on
