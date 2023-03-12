@@ -6,7 +6,6 @@ doc: "https://mirage.github.io/arp/"
 dev-repo: "git+https://github.com/mirage/arp.git"
 bug-reports: "https://github.com/mirage/arp/issues"
 license: "ISC"
-
 depends: [
   "ocaml" {>= "4.06.0"}
   "dune" {>= "2.7.0"}
@@ -17,7 +16,6 @@ depends: [
   "mirage-time" {>= "2.0.0"}
   "lwt"
   "duration"
-  "mirage-profile" {>= "0.9"}
   "ethernet" {>= "3.0.0"}
   "bisect_ppx" {dev & >= "2.5.0"}
   "mirage-random" {with-test & >= "2.0.0"}
