@@ -21,4 +21,6 @@ Motivation for this implementation is [written up](https://hannes.nqsb.io/Posts/
 4.08.0) and opam (>= 2.0.0).
 
 Benchmarks require more opam libraries, namely `mirage-vnetif mirage-clock-unix
-mirage-unix mirage-random-test`.  Use `make bench` to build and run it.
+mirage-unix`.  Use
+`dune build --release bench/bench.exe && _build/default/bench/bench.exe`
+to build and run it.

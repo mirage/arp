@@ -1,7 +1,12 @@
-module Test (R : Mirage_random.S) = struct
+let generate n =
+  let data = Cstruct.create n in
+  for i = 0 to pred n do
+    Cstruct.set_uint8 data i (Random.int 256)
+  done;
+  data
 
 let rec gen_ip () =
-  let buf = R.generate 4 in
+  let buf = generate 4 in
   let ip = Ipaddr.V4.of_octets_exn (Cstruct.to_string buf) in
   if ip = Ipaddr.V4.any || ip = Ipaddr.V4.broadcast then
     gen_ip ()
@@ -9,7 +14,7 @@ let rec gen_ip () =
     buf, ip
 
 let rec gen_mac () =
-  let buf = R.generate 6 in
+  let buf = generate 6 in
   let mac = Macaddr.of_octets_exn (Cstruct.to_string buf) in
   if mac = Macaddr.broadcast then
     gen_mac ()
@@ -25,7 +30,7 @@ let hdr =
   buf
 
 let gen_int () =
-  let buf = R.generate 1 in
+  let buf = generate 1 in
   (buf, Cstruct.get_uint8 buf 0)
 
 let gen_op () =
@@ -62,18 +67,17 @@ let p =
 module Coding = struct
   let gen_op_arp () =
     let rec gen_op () =
-      let buf = R.generate 2 in
+      let buf = generate 2 in
       match Cstruct.BE.get_uint16 buf 0 with
       | 1 | 2 -> gen_op ()
       | x -> (x, buf)
     in
-    let data = R.generate 20
+    let data = generate 20
     and o, opb = gen_op ()
     in
     o, Cstruct.concat [ hdr ; opb ; data ]
 
   let rec gen_unhandled_arp () =
-    let open R in
     (* some consistency -- hlen and plen *)
     let htype = generate 2
     and ptype = generate 2
@@ -92,7 +96,7 @@ module Coding = struct
       gen_unhandled_arp ()
     else
       let rec gen_op () =
-        let buf = R.generate 2 in
+        let buf = generate 2 in
         match Cstruct.BE.get_uint16 buf 0 with
         | 1 | 2 -> gen_op ()
         | _ -> buf
@@ -107,7 +111,7 @@ module Coding = struct
 
   let gen_short_arp () =
     let _, l = gen_int () in
-    R.generate (l mod 28)
+    generate (l mod 28)
 
   let e =
     let module M = struct
@@ -639,7 +643,7 @@ module Handling = struct
     and ipaddr = gen_ip ()
     in
     let t, _garp = Arp_handler.create ~timeout:1 ~ipaddr mac in
-    let pkt = R.generate 24 in
+    let pkt = generate 24 in
     let _, outp, w = Arp_handler.input t pkt in
     Alcotest.(check (option out) "nothing out" None outp) ;
     Alcotest.(check (option (pair m (list int))) "nothin woken up" None w)
@@ -875,10 +879,6 @@ let tests = [
   "Handler", Handling.handl_tsts ;
 ]
 
-end
-
-module T = Test(Mirage_random_test)
-
 let () =
-  Mirage_random_test.initialize () ;
-  Alcotest.run "ARP tests" T.tests
+  Random.self_init ();
+  Alcotest.run "ARP tests" tests
