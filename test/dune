@@ -1,4 +1,4 @@
 (test
  (name tests)
  (package arp)
- (libraries arp mirage-random mirage-random-test macaddr cstruct alcotest))
+ (libraries arp macaddr cstruct alcotest))

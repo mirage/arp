@@ -1,4 +1,4 @@
 (executable
  (name bench)
  (libraries arp.mirage mirage-vnetif lwt ipaddr ethernet mirage-time-unix
-   mirage-clock-unix mirage-random mirage-random-test lwt.unix))
+   mirage-clock-unix lwt.unix))
