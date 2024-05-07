@@ -34,7 +34,7 @@ open Lwt.Infix
 
 let logsrc = Logs.Src.create "ARP" ~doc:"Mirage ARP handler"
 
-module Make (Ethernet : Ethernet.S) (Time : Mirage_time.S) = struct
+module Make (Ethernet : Ethernet.S) = struct
 
   type error = [
     | `Timeout
@@ -62,7 +62,7 @@ module Make (Ethernet : Ethernet.S) (Time : Mirage_time.S) = struct
 
   let rec tick t () =
     if t.ticking then
-      Time.sleep_ns probe_repeat_delay >>= fun () ->
+      Mirage_time.sleep_ns probe_repeat_delay >>= fun () ->
       let state, requests, timeouts = Arp_handler.tick t.state in
       t.state <- state ;
       Lwt_list.iter_p (output t) requests >>= fun () ->
