@@ -60,14 +60,14 @@ module Make (Ethernet : Ethernet.S) = struct
         (fun m -> m "error %a while outputting packet %a to %a"
             Ethernet.pp_error e Arp_packet.pp arp Macaddr.pp destination)
 
-  let rec tick t () =
+  let rec tick ~probe_delay t () =
     if t.ticking then
-      Mirage_time.sleep_ns probe_repeat_delay >>= fun () ->
+      Mirage_time.sleep_ns probe_delay >>= fun () ->
       let state, requests, timeouts = Arp_handler.tick t.state in
       t.state <- state ;
       Lwt_list.iter_p (output t) requests >>= fun () ->
       List.iter (fun (_, u) -> Lwt.wakeup u (Error `Timeout)) timeouts ;
-      tick t ()
+      tick ~probe_delay t ()
     else
       Lwt.return_unit
 
@@ -135,11 +135,11 @@ module Make (Ethernet : Ethernet.S) = struct
     | Arp_handler.Wait (t, _) -> t
     | Arp_handler.Mac mac -> Lwt.return (Ok mac)
 
-  let connect ethif =
+  let connect ?(probe_delay = probe_repeat_delay) ethif =
     let mac = Ethernet.mac ethif in
     let state = init_empty mac in
     let t = { ethif; state; ticking = true} in
-    Lwt.async (tick t);
+    Lwt.async (tick ~probe_delay t);
     Lwt.return t
 
   let disconnect t =
