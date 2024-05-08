@@ -1,3 +1,9 @@
+## v3.1.1 (2024-05-08)
+
+* Remove mirage-random and mirage-random-test dependency (#29 @hannesm)
+* Remove superfluous mirage-clock-unix and mirage-flow dependencies (#29 @hannesm)
+* Remove bisect-ppx dependency (#29 @hannesm)
+
 ## v3.1.0 (2023-03-12)
 
 * Remove mirage-profile dependency (#28 @hannesm)
