@@ -7,13 +7,11 @@ OCaml.  It handles IPv4 protocol addresses and Ethernet hardware addresses only.
 
 A [MirageOS](https://mirage.io) ARP implementation is in the `mirage` subdirectory.
 
-Motivation for this implementation is [written up](https://hannes.nqsb.io/Posts/ARP).
+Motivation for this implementation is [written up](https://hannes.robur.coop/Posts/ARP).
 
 ## Documentation
 
-[![Build Status](https://travis-ci.org/mirage/arp.svg?branch=master)](https://travis-ci.org/mirage/arp)
-
-[API documentation](https://mirage.github.io/arp/) is available online.
+[API documentation](https://mirage.github.io/arp/arp/index.html) is available online.
 
 ## Installation
 
