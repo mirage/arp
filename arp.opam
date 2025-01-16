@@ -13,7 +13,7 @@ depends: [
   "ipaddr" {>= "4.0.0"}
   "macaddr" {>= "4.0.0"}
   "logs"
-  "mirage-time" {>= "4.0.0"}
+  "mirage-sleep" {>= "4.0.0"}
   "lwt"
   "duration"
   "ethernet" {>= "3.0.0"}

@@ -1,3 +1,3 @@
 (executable
  (name bench)
- (libraries arp.mirage mirage-vnetif lwt ipaddr ethernet mirage-time lwt.unix))
+ (libraries arp.mirage mirage-vnetif lwt ipaddr ethernet mirage-sleep lwt.unix))

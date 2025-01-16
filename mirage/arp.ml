@@ -62,7 +62,7 @@ module Make (Ethernet : Ethernet.S) = struct
 
   let rec tick ~probe_delay t () =
     if t.ticking then
-      Mirage_time.sleep_ns probe_delay >>= fun () ->
+      Mirage_sleep.ns probe_delay >>= fun () ->
       let state, requests, timeouts = Arp_handler.tick t.state in
       t.state <- state ;
       Lwt_list.iter_p (output t) requests >>= fun () ->

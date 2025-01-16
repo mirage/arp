@@ -102,7 +102,7 @@ let rec query arp () =
   incr count2 ;
   let ip = gen_ip () in
   Lwt.async (fun () -> A.query arp ip >|= fun _ -> ());
-  Mirage_time.sleep_ns (Duration.of_us 100) >>= fun () ->
+  Mirage_sleep.ns (Duration.of_us 100) >>= fun () ->
   query arp ()
 
 type arp_stack = {
@@ -138,35 +138,35 @@ let runit () =
         let res = generate 28 in
         Cstruct.blit res 0 b 0 28 ;
         28) () ;
-    Mirage_time.sleep_ns (Duration.of_sec 5)
+    Mirage_sleep.ns (Duration.of_sec 5)
   ] >>= fun () ->
   Printf.printf "%d random input\n%!" !count ;
   count := 0 ;
   Lwt.pick [
     (V.listen stack.netif ~header_size (fun b -> incr count ; A.input stack.arp b) >|= fun _ -> ());
     send other.ethif gen_arp () ;
-    Mirage_time.sleep_ns (Duration.of_sec 5)
+    Mirage_sleep.ns (Duration.of_sec 5)
   ] >>= fun () ->
   Printf.printf "%d random ARP input\n%!" !count ;
   count := 0 ;
   Lwt.pick [
     (V.listen stack.netif ~header_size (fun b -> incr count ; A.input stack.arp b) >|= fun _ -> ());
     send other.ethif gen_req () ;
-    Mirage_time.sleep_ns (Duration.of_sec 5)
+    Mirage_sleep.ns (Duration.of_sec 5)
   ] >>= fun () ->
   Printf.printf "%d requests\n%!" !count ;
   count := 0 ;
   Lwt.pick [
     (V.listen stack.netif ~header_size (fun b -> incr count ; A.input stack.arp b) >|= fun _ -> ());
     send other.ethif gen_rep () ;
-    Mirage_time.sleep_ns (Duration.of_sec 5)
+    Mirage_sleep.ns (Duration.of_sec 5)
   ] >>= fun () ->
   Printf.printf "%d replies\n%!" !count ;
   count := 0 ;
   Lwt.pick [
     (V.listen stack.netif ~header_size (fun b -> incr count ; A.input stack.arp b) >|= fun _ -> ());
     send other.ethif (gen stack.arp) () ;
-    Mirage_time.sleep_ns (Duration.of_sec 5)
+    Mirage_sleep.ns (Duration.of_sec 5)
   ] >>= fun () ->
   Printf.printf "%d mixed\n%!" !count ;
   count := 0 ;
@@ -174,7 +174,7 @@ let runit () =
     (V.listen stack.netif ~header_size (fun b -> incr count ; A.input stack.arp b) >|= fun _ -> ());
     send other.ethif gen_rep  () ;
     query stack.arp () ;
-    Mirage_time.sleep_ns (Duration.of_sec 5)
+    Mirage_sleep.ns (Duration.of_sec 5)
   ] >|= fun () ->
   Printf.printf "%d queries (%d qs)\n%!" !count !count2
 
