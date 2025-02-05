@@ -317,7 +317,6 @@ let os_linux_bsd () =
   match Bos.OS.Cmd.(run_out cmd |> out_string |> success) with
   | Ok s when s = "FreeBSD" -> true
   | Ok s when s = "Linux" -> true
-  | Ok s when s = "OpenBSD" -> true
   | Ok _ -> false
   | Error _ -> false
 
