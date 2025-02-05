@@ -1,3 +1,8 @@
+## v4.0.0 (2025-02-05)
+
+* Use mirage-sleep instead of mirage-time (no need to functorize over
+  Mirage_time.S) (#32 @hannesm)
+
 ## v3.1.1 (2024-05-08)
 
 * Remove mirage-random and mirage-random-test dependency (#29 @hannesm)
