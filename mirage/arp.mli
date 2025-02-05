@@ -65,8 +65,8 @@ module type S = sig
 end
 
 
-module Make (Ethernet : Ethernet.S) (Time : Mirage_time.S) : sig
+module Make (Ethernet : Ethernet.S) : sig
   include S
 
-  val connect : Ethernet.t -> t Lwt.t
+  val connect : ?probe_delay:int64 -> Ethernet.t -> t Lwt.t
 end
