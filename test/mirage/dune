@@ -2,4 +2,4 @@
  (name tests)
  (package arp)
  (libraries alcotest lwt.unix logs logs.fmt fmt mirage-vnetif
-   duration ethernet arp arp.mirage cstruct))
+   duration ethernet arp arp.mirage cstruct bos))
