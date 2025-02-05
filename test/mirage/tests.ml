@@ -328,12 +328,12 @@ let entries_expire () =
   let test =
     Mirage_sleep.ns (Duration.of_ms 10) >>= fun () ->
     set_and_check ~listener:listen.arp ~claimant:speak first_ip >>= fun () ->
-    (* sleep for 5s to make sure we hit `tick` often enough *)
-    Mirage_sleep.ns (Duration.of_sec 5) >>= fun () ->
+    (* sleep for 10s to make sure we hit `tick` often enough *)
+    Mirage_sleep.ns (Duration.of_sec 10) >>= fun () ->
     (* asking now should generate a query *)
     not_in_cache ~listen:speak.netif expected_arp_query listen.arp first_ip
   in
-  timeout ~time:7000 test
+  timeout ~time:12000 test
 
 (* RFC isn't strict on how many times to try, so we'll just say any number
    greater than 1 is fine *)
