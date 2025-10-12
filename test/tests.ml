@@ -424,11 +424,32 @@ module Handling = struct
     let _t, res = Arp_handler.query t ipaddr (merge 1) in
     Alcotest.check qres "own IP can be queried" (Arp_handler.Mac mac) res
 
-  let query source_mac source_ip target_ip =
+  let query source_mac source_ip ?(target_mac=Macaddr.broadcast) target_ip =
     { Arp_packet.operation = Arp_packet.Request ;
       source_mac ; source_ip ;
-      target_mac = Macaddr.broadcast ; target_ip },
-    Macaddr.broadcast
+      target_mac; target_ip },
+    target_mac
+
+  let assert_probing t =
+    let _, outp, timeout = Arp_handler.tick t in
+    (match outp with
+    | [ { Arp_packet.operation ;
+      source_mac=_ ; source_ip=_ ;
+      target_mac; target_ip=_ }, _ ] when (operation = Arp_packet.Request && target_mac <> Macaddr.broadcast) -> ();
+    | _ -> Alcotest.failf "is unicast request");
+    Alcotest.(check (list (list int)) "nothing timed out" [] timeout)
+
+  let assert_stale t oip omac =
+    let t, res = Arp_handler.query t oip (merge 99) in
+    Alcotest.check qres "stale entry returns MAC" (Arp_handler.Mac omac) res;
+    assert_probing t
+
+  let assert_dynamic t oip omac =
+    let t, res = Arp_handler.query t oip (merge 99) in
+    Alcotest.check qres "stale entry returns MAC" (Arp_handler.Mac omac) res;
+    let _, outp, timeout = Arp_handler.tick t in
+    Alcotest.(check (list out) "nada sent" [] outp) ;
+    Alcotest.(check (list (list int)) "nothing timed out" [] timeout)
 
   let handle_gen_request () =
     let mac = gen_mac ()
@@ -489,11 +510,11 @@ module Handling = struct
     let _, _, a = Arp_handler.tick t in
     Alcotest.(check (list (list int)) "tick timed out" [[1]] a)
 
-  let req_before_timeout () =
+  let probe_after_query_stale () =
     let mac = gen_mac ()
     and ipaddr = gen_ip ()
     in
-    let t, _garp = Arp_handler.create ~timeout:1 ~ipaddr mac in
+    let t, _garp = Arp_handler.create ~refresh:1 ~retries:2 ~ipaddr mac in
     let other = gen_ip () in
     let t, _ = Arp_handler.query t other (merge 1) in
     let omac = gen_mac () in
@@ -506,9 +527,32 @@ module Handling = struct
     Alcotest.(check (option out) "out is none" None outp) ;
     Alcotest.(check (option (pair m (list int))) "wake is correct"
                 (Some (omac, [1])) wake) ;
-    let _, outp, rs = Arp_handler.tick t in
+    let t, outp, rs = Arp_handler.tick t in (* stays in Dynamic *)
     Alcotest.(check bool "timeouts are empty" true (rs = [])) ;
-    Alcotest.(check (list out) "arp request is sent" [query mac ipaddr other] outp)
+    Alcotest.(check (list out) "no arp request is sent" [] outp);
+    let t, res = Arp_handler.query t other (merge 1) in
+    Alcotest.check qres "dynamic entry can be queried" (Arp_handler.Mac omac) res;
+    let t, outp, rs = Arp_handler.tick t in (* Dynamic timeout --> Stale *)
+    Alcotest.(check bool "timeouts are empty" true (rs = [])) ;
+    Alcotest.(check (list out) "no arp request is sent" [] outp);
+    let t, res = Arp_handler.query t other (merge 2) in (* request for Stale entry --> Probing *)
+    Alcotest.check qres "stale entry can be queried" (Arp_handler.Mac omac) res;
+    let t, outp, rs = Arp_handler.tick t in (* Probe entry creates unicast request *)
+    Alcotest.(check bool "timeouts are empty" true (rs = [])) ;
+    Alcotest.(check (list out) "unicast arp request is sent" [query mac ipaddr ~target_mac:omac other] outp);
+    let t, res = Arp_handler.query t other (merge 3) in
+    Alcotest.check qres "probe entry can be queried" (Arp_handler.Mac omac) res;
+    let t, outp, rs = Arp_handler.tick t in (* Probe entry creates second unicast request *)
+    Alcotest.(check bool "timeouts are empty" true (rs = [])) ;
+    Alcotest.(check (list out) "unicast arp request is sent" [query mac ipaddr ~target_mac:omac other] outp);
+    let t, outp, rs = Arp_handler.tick t in (* Probe entry creates third unicast request *)
+    Alcotest.(check bool "timeouts are empty" true (rs = [])) ;
+    Alcotest.(check (list out) "unicast arp request is sent" [query mac ipaddr ~target_mac:omac other] outp);
+    let t, outp, rs = Arp_handler.tick t in (* Probe entry times out and gets deleted *)
+    Alcotest.(check bool "timeouts are empty" true (rs = [])) ;
+    Alcotest.(check (list out) "no arp request is sent" [] outp);
+    let _, res = Arp_handler.query t other (merge 4) in
+    Alcotest.check qres "entry was deleted" (Arp_handler.RequestWait (query mac ipaddr other, [4])) res
 
   let multiple_reqs () =
     let mac = gen_mac ()
@@ -755,13 +799,14 @@ module Handling = struct
     Alcotest.(check (option out) "nothing out" None outp) ;
     Alcotest.(check (option (pair m (list int))) "nothing woken up" None w) ;
     Alcotest.(check (option m) "overriden entry in cache" (Some omac)
-                (Arp_handler.in_cache t other))
+                (Arp_handler.in_cache t other));
+    assert_stale t other omac
 
   let reply_times_out () =
     let mac = gen_mac ()
     and ipaddr = gen_ip ()
     in
-    let t, _garp = Arp_handler.create ~timeout:1 ~ipaddr mac in
+    let t, _garp = Arp_handler.create ~timeout:2 ~refresh:1 ~ipaddr mac in
     let other = gen_ip () in
     let omac = gen_mac () in
     let pkt =
@@ -777,9 +822,15 @@ module Handling = struct
     Alcotest.(check (option (pair m (list int))) "something woken up" (Some (omac, [1])) w) ;
     Alcotest.(check (option m) "entry in cache" (Some omac) (Arp_handler.in_cache t other)) ;
     let t, outp, timeout = Arp_handler.tick t in
-    Alcotest.(check (list out) "request sent" [q] outp) ;
+    Alcotest.(check (list out) "nada sent" [] outp) ;
+    Alcotest.(check (list (list int)) "nothing timed out" [] timeout) ;
+    let t, outp, timeout = Arp_handler.tick t in (* -> Stale *)
+    Alcotest.(check (list out) "nada sent" [] outp) ;
     Alcotest.(check (list (list int)) "nothing timed out" [] timeout) ;
     let t, outp, timeout = Arp_handler.tick t in
+    Alcotest.(check (list out) "nada sent" [] outp) ;
+    Alcotest.(check (list (list int)) "nothing timed out" [] timeout) ;
+    let t, outp, timeout = Arp_handler.tick t in (* -> deleted *)
     Alcotest.(check (list out) "nada sent" [] outp) ;
     Alcotest.(check (list (list int)) "nothing timed out" [] timeout) ;
     Alcotest.(check (option m) "entry no longer in cache" None
@@ -832,6 +883,170 @@ module Handling = struct
     Alcotest.(check (option out) "nothing out" None outp) ;
     Alcotest.(check (option (pair m (list int))) "something woken up" (Some (omac, [2;1])) w)
 
+  let stale_reply_same_mac () =
+    let mac = gen_mac ()
+    and ipaddr = gen_ip ()
+    in
+    let t, _garp = Arp_handler.create ~refresh:1 ~ipaddr mac in
+    let other = gen_ip () in
+    let omac = gen_mac () in
+    let pkt =
+      Arp_packet.encode { Arp_packet.operation = Arp_packet.Reply ;
+                          source_ip = other ; source_mac = omac ;
+                          target_ip = ipaddr ; target_mac = mac }
+    in
+    (* Create Pending entry and get reply -> Dynamic *)
+    let q = query mac ipaddr other in
+    let t, r = Arp_handler.query t other (merge 1) in
+    Alcotest.check qres "r is request wait" (Arp_handler.RequestWait (q, [1])) r ;
+    let t, outp, w = Arp_handler.input t pkt in
+    Alcotest.(check (option out) "nothing out" None outp) ;
+    Alcotest.(check (option (pair m (list int))) "something woken up" (Some (omac, [1])) w) ;
+    Alcotest.(check (option m) "entry in cache" (Some omac) (Arp_handler.in_cache t other)) ;
+    (* Tick to expire refresh timer: Dynamic -> Stale *)
+    let t, outp, timeout = Arp_handler.tick t in
+    Alcotest.(check (list out) "nada sent" [] outp) ;
+    Alcotest.(check (list (list int)) "nothing timed out" [] timeout) ;
+    let t, outp, timeout = Arp_handler.tick t in
+    Alcotest.(check (list out) "nada sent" [] outp) ;
+    Alcotest.(check (list (list int)) "nothing timed out" [] timeout) ;
+    assert_stale t other omac;
+    (* Now in Stale state, send reply with same MAC: Stale -> Dynamic *)
+    let t, outp, w = Arp_handler.input t pkt in
+    Alcotest.(check (option out) "nothing out" None outp) ;
+    Alcotest.(check (option (pair m (list int))) "nothing woken up" None w) ;
+    Alcotest.(check (option m) "entry still in cache" (Some omac) (Arp_handler.in_cache t other)) ;
+    (* Query should return immediately with the MAC (not in Stale anymore) *)
+    assert_dynamic t other omac
+
+  let stale_reply_different_mac () =
+    let mac = gen_mac ()
+    and ipaddr = gen_ip ()
+    in
+    let t, _garp = Arp_handler.create ~refresh:1 ~ipaddr mac in
+    let other = gen_ip () in
+    let omac = gen_mac () in
+    let pkt =
+      Arp_packet.encode { Arp_packet.operation = Arp_packet.Reply ;
+                          source_ip = other ; source_mac = omac ;
+                          target_ip = ipaddr ; target_mac = mac }
+    in
+    (* Create Pending entry and get reply -> Dynamic *)
+    let q = query mac ipaddr other in
+    let t, r = Arp_handler.query t other (merge 1) in
+    Alcotest.check qres "r is request wait" (Arp_handler.RequestWait (q, [1])) r ;
+    let t, outp, w = Arp_handler.input t pkt in
+    Alcotest.(check (option out) "nothing out" None outp) ;
+    Alcotest.(check (option (pair m (list int))) "something woken up" (Some (omac, [1])) w) ;
+    Alcotest.(check (option m) "entry in cache" (Some omac) (Arp_handler.in_cache t other)) ;
+    (* Tick to expire refresh timer: Dynamic -> Stale *)
+    let t, outp, timeout = Arp_handler.tick t in
+    Alcotest.(check (list out) "nada sent" [] outp) ;
+    Alcotest.(check (list (list int)) "nothing timed out" [] timeout) ;
+    let t, outp, timeout = Arp_handler.tick t in
+    Alcotest.(check (list out) "nada sent" [] outp) ;
+    Alcotest.(check (list (list int)) "nothing timed out" [] timeout) ;
+    assert_stale t other omac;
+    (* Now in Stale state, send reply with DIFFERENT MAC: Stale -> Stale (but MAC changes) *)
+    let omac2 = gen_mac () in
+    let pkt2 =
+      Arp_packet.encode { Arp_packet.operation = Arp_packet.Reply ;
+                          source_ip = other ; source_mac = omac2 ;
+                          target_ip = ipaddr ; target_mac = mac }
+    in
+    let t, outp, w = Arp_handler.input t pkt2 in
+    Alcotest.(check (option out) "nothing out" None outp) ;
+    Alcotest.(check (option (pair m (list int))) "nothing woken up" None w) ;
+    Alcotest.(check (option m) "entry updated with new MAC" (Some omac2) (Arp_handler.in_cache t other)) ;
+    (* Entry should still be Stale *)
+    assert_stale t other omac2
+
+  let probing_reply_same_mac () =
+    let mac = gen_mac ()
+    and ipaddr = gen_ip ()
+    in
+    let t, _garp = Arp_handler.create ~timeout:5 ~refresh:1 ~retries:3 ~ipaddr mac in
+    let other = gen_ip () in
+    let omac = gen_mac () in
+    let pkt =
+      Arp_packet.encode { Arp_packet.operation = Arp_packet.Reply ;
+                          source_ip = other ; source_mac = omac ;
+                          target_ip = ipaddr ; target_mac = mac }
+    in
+    (* Create Pending entry and get reply -> Dynamic *)
+    let q = query mac ipaddr other in
+    let t, r = Arp_handler.query t other (merge 1) in
+    Alcotest.check qres "r is request wait" (Arp_handler.RequestWait (q, [1])) r ;
+    let t, outp, w = Arp_handler.input t pkt in
+    Alcotest.(check (option out) "nothing out" None outp) ;
+    Alcotest.(check (option (pair m (list int))) "something woken up" (Some (omac, [1])) w) ;
+    (* Tick to expire refresh timer: Dynamic -> Stale *)
+    let t, outp, timeout = Arp_handler.tick t in
+    Alcotest.(check (list out) "nada sent" [] outp) ;
+    Alcotest.(check (list (list int)) "nothing timed out" [] timeout) ;
+    let t, outp, timeout = Arp_handler.tick t in
+    Alcotest.(check (list out) "nada sent" [] outp) ;
+    Alcotest.(check (list (list int)) "nothing timed out" [] timeout) ;
+    assert_stale t other omac;
+    (* Query stale entry: Stale -> Probing *)
+    let t, res = Arp_handler.query t other (merge 2) in
+    Alcotest.check qres "stale entry returns MAC" (Arp_handler.Mac omac) res ;
+    (* Verify we're in Probing state by checking a tick sends unicast request *)
+    assert_probing t;
+    (* Now in Probing state, send reply with same MAC: Probing -> Dynamic *)
+    let t, outp, w = Arp_handler.input t pkt in
+    Alcotest.(check (option out) "nothing out" None outp) ;
+    Alcotest.(check (option (pair m (list int))) "nothing woken up" None w) ;
+    Alcotest.(check (option m) "entry still in cache" (Some omac) (Arp_handler.in_cache t other)) ;
+    (* Verify we're back to Dynamic state *)
+    assert_dynamic t other omac
+
+  let probing_reply_different_mac () =
+    let mac = gen_mac ()
+    and ipaddr = gen_ip ()
+    in
+    let t, _garp = Arp_handler.create ~timeout:5 ~refresh:1 ~retries:3 ~ipaddr mac in
+    let other = gen_ip () in
+    let omac = gen_mac () in
+    let pkt =
+      Arp_packet.encode { Arp_packet.operation = Arp_packet.Reply ;
+                          source_ip = other ; source_mac = omac ;
+                          target_ip = ipaddr ; target_mac = mac }
+    in
+    (* Create Pending entry and get reply -> Dynamic *)
+    let q = query mac ipaddr other in
+    let t, r = Arp_handler.query t other (merge 1) in
+    Alcotest.check qres "r is request wait" (Arp_handler.RequestWait (q, [1])) r ;
+    let t, outp, w = Arp_handler.input t pkt in
+    Alcotest.(check (option out) "nothing out" None outp) ;
+    Alcotest.(check (option (pair m (list int))) "something woken up" (Some (omac, [1])) w) ;
+    (* Tick to expire refresh timer: Dynamic -> Stale *)
+    let t, outp, timeout = Arp_handler.tick t in
+    Alcotest.(check (list out) "nada sent" [] outp) ;
+    Alcotest.(check (list (list int)) "nothing timed out" [] timeout) ;
+    let t, outp, timeout = Arp_handler.tick t in
+    Alcotest.(check (list out) "nada sent" [] outp) ;
+    Alcotest.(check (list (list int)) "nothing timed out" [] timeout) ;
+    assert_stale t other omac;
+    (* Query stale entry: Stale -> Probing *)
+    let t, res = Arp_handler.query t other (merge 2) in
+    Alcotest.check qres "stale entry returns MAC" (Arp_handler.Mac omac) res ;
+    (* Verify we're in Probing state by checking a tick sends unicast request *)
+    assert_probing t;
+    (* Now in Probing state, send reply with DIFFERENT MAC: Probing -> Stale *)
+    let omac2 = gen_mac () in
+    let pkt2 =
+      Arp_packet.encode { Arp_packet.operation = Arp_packet.Reply ;
+                          source_ip = other ; source_mac = omac2 ;
+                          target_ip = ipaddr ; target_mac = mac }
+    in
+    let t, outp, w = Arp_handler.input t pkt2 in
+    Alcotest.(check (option out) "nothing out" None outp) ;
+    Alcotest.(check (option (pair m (list int))) "nothing woken up" None w) ;
+    Alcotest.(check (option m) "entry updated with new MAC" (Some omac2) (Arp_handler.in_cache t other)) ;
+    (* Verify we're back to Stale state *)
+    assert_stale t other omac2
+
   let handl_tsts = [
     "create raises", `Quick, create_raises ;
     "basic tests", `Quick, basic_good ;
@@ -848,7 +1063,7 @@ module Handling = struct
     "alias wakes", `Quick, alias_wakes ;
     "static wakes", `Quick, static_wakes ;
     "handle timeout", `Quick, handle_timeout ;
-    "request send before timeout", `Quick, req_before_timeout ;
+    "request send before timeout", `Quick, probe_after_query_stale ;
     "multiple requests are send", `Quick, multiple_reqs ;
     "multiple requests are send 2", `Quick, multiple_reqs_2 ;
     "handle reply", `Quick, handle_reply ;
@@ -865,6 +1080,10 @@ module Handling = struct
     "dynamic entry overriden by other", `Quick, reply_overriden_other ;
     "dynamic entry is not advertised", `Quick, dyn_not_advertised ;
     "reply wakes tasks", `Quick, handle_reply_wakesup ;
+    "stale to dynamic on same MAC reply", `Quick, stale_reply_same_mac ;
+    "stale stays stale on different MAC reply", `Quick, stale_reply_different_mac ;
+    "probing to dynamic on same MAC reply", `Quick, probing_reply_same_mac ;
+    "probing to stale on different MAC reply", `Quick, probing_reply_different_mac ;
   ]
 end
 
