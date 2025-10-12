@@ -45,16 +45,17 @@ type 'a t
 
 (** {2 Constructor} *)
 
-(** [create ~timeout ~retries ~ipaddr mac)] is [t, garp].  The constructor of
-    the ARP handler, specifying timeouts (defaults to 800) and amount of
-    retries (defaults to 5).  If [ipaddr] is provided, a gratuitous ARP
-    request will be encoded in [garp], otherwise {!Ipaddr.V4.any} is temporarily
-    used and [garp] is [None].    The value of [timeout] is the number of
-    [Tick] events.
+(** [create ~timeout ~refresh ~retries ~ipaddr mac)] is [t, garp].  The
+    constructor of the ARP handler, specifying timeout of stale cache entries
+    (defaults to 800), the refresh interval of active entries (defaults to 40)
+    and amount of retries for requests and probes (defaults to 5). If [ipaddr]
+    is provided, a gratuitous ARP request will be encoded in [garp], otherwise
+    {!Ipaddr.V4.any} is temporarily used and [garp] is [None]. The value of
+    [timeout] and [refresh] is the number of [Tick] events.
 
     @raise Invalid_argument is [timeout] is 0 or negative or [retries] is
     negative.  *)
-val create : ?timeout:int -> ?retries:int -> ?logsrc:Logs.src ->
+val create : ?timeout:int -> ?refresh:int -> ?retries:int -> ?logsrc:Logs.src ->
   ?ipaddr:Ipaddr.V4.t -> Macaddr.t -> 'a t * (Arp_packet.t * Macaddr.t) option
 
 (** [pp ppf t] prints the ARP handler [t] on [ppf] by iterating over all cache
