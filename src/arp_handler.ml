@@ -1,8 +1,10 @@
 
 type 'a entry =
   | Static of Macaddr.t * bool
-  | Dynamic of Macaddr.t * int
-  | Pending of 'a * int
+  | Dynamic of Macaddr.t * int (* active dynamic entry *)
+  | Pending of 'a * int        (* unresolved pending entry *)
+  | Stale of Macaddr.t * int   (* stale dynamic entry *)
+  | Probing of Macaddr.t * int (* probing stale entry *)
 
 module M = Map.Make(Ipaddr.V4)
 
@@ -10,9 +12,10 @@ type 'a t = {
   cache : 'a entry M.t ;
   mac : Macaddr.t ;
   ip : Ipaddr.V4.t ;
-  timeout : int ;
-  retries : int ;
-  epoch : int ;
+  timeout : int ; (* Stale entry expire interval in ticks *)
+  refresh : int ; (* Dynamic entry becomes stale interval in ticks *)
+  retries : int ; (* how many retries for ARP requests/probes *)
+  epoch : int ;   (* current tick value *)
   logsrc : Logs.src
 }
 
@@ -35,6 +38,12 @@ let[@coverage off] pp_entry now k pp =
   | Pending (_, retries) ->
     Format.fprintf pp "%a (incomplete, %d retries left)"
       Ipaddr.V4.pp k (retries - now)
+  | Stale (m, t) ->
+    Format.fprintf pp "%a at %a (stale, timeout in %d)" Ipaddr.V4.pp k
+      Macaddr.pp m (t - now)
+  | Probing (m, t) ->
+    Format.fprintf pp "%a at %a (probing, timeout in %d)" Ipaddr.V4.pp k
+      Macaddr.pp m (t - now)
 
 let[@coverage off] pp pp t =
   Format.fprintf pp "mac %a ip %a entries %d timeout %d retries %d@."
@@ -66,7 +75,7 @@ let alias t ip =
         Ipaddr.V4.pp ip Macaddr.pp t.mac) ;
   { t with cache }, (garp, Macaddr.broadcast), pending t ip
 
-let create ?(timeout = 800) ?(retries = 5)
+let create ?(timeout = 800) ?(refresh = 40) ?(retries = 5)
     ?(logsrc = Logs.Src.create "arp" ~doc:"ARP handler")
     ?ipaddr
     mac =
@@ -76,7 +85,7 @@ let create ?(timeout = 800) ?(retries = 5)
     invalid_arg "retries must be positive" ;
   let cache = M.empty in
   let ip = match ipaddr with None -> Ipaddr.V4.any | Some x -> x in
-  let t = { cache ; mac ; ip ; timeout ; retries ; epoch = 0 ; logsrc } in
+  let t = { cache ; mac ; ip ; timeout ; refresh;  retries ; epoch = 0 ; logsrc } in
   match ipaddr with
   | None -> t, None
   | Some ip ->
@@ -97,9 +106,10 @@ let in_cache t ip =
   | Pending _ -> None
   | Static (m, _) -> Some m
   | Dynamic (m, _) -> Some m
+  | Stale (m, _) -> Some m
+  | Probing (m, _) -> Some m
 
-let request t ip =
-  let target = Macaddr.broadcast in
+let request t ?(target = Macaddr.broadcast) ip =
   let request = {
     Arp_packet.operation = Arp_packet.Request ;
     source_mac = t.mac ; source_ip = t.ip ;
@@ -118,28 +128,46 @@ let reply arp m =
 
 let tick t =
   let epoch = t.epoch in
+  (* Logs.debug ~src:t.logsrc (fun pp -> pp "tick: %d" epoch) ; *)
   let entry k v (cache, acc, r) = match v with
-    | Dynamic (m, tick) when tick = epoch ->
+    | Stale (m, tick) when tick = epoch ->
       Logs.debug ~src:t.logsrc
-        (fun pp -> pp "removing ARP entry %a (mac %a)"
+        (fun pp -> pp "removing stale ARP entry %a (mac %a)"
             Ipaddr.V4.pp k Macaddr.pp m) ;
       M.remove k cache, acc, r
-    | Dynamic (_, tick) when tick = succ epoch ->
-      cache, request t k :: acc, r
+    | Dynamic (m, tick) when tick = epoch ->
+      Logs.debug ~src:t.logsrc
+        (fun pp -> pp "ARP entry %a (mac %a) timed out --> Stale"
+            Ipaddr.V4.pp k Macaddr.pp m) ;
+      M.add k (Stale (m, t.epoch + t.timeout)) cache, acc, r
     | Pending (a, retry) when retry = epoch ->
       Logs.info ~src:t.logsrc
         (fun pp -> pp "ARP timeout after %d retries for %a"
             t.retries Ipaddr.V4.pp k) ;
       M.remove k cache, acc, a :: r
-    | Pending _ -> cache, request t k :: acc, r
+    | Pending (_, retry) ->
+      Logs.debug ~src:t.logsrc
+        (fun pp -> pp "resending ARP request for %a (%d left)"
+            Ipaddr.V4.pp k (retry - epoch)) ;
+      cache, request t k :: acc, r
+    | Probing (m, retry) when retry = epoch ->
+      Logs.info ~src:t.logsrc
+        (fun pp -> pp "unicast ARP probe timeout after %d retries for %a/%a failed"
+            t.retries Ipaddr.V4.pp k Macaddr.pp m) ;
+      M.remove k cache, acc, r
+    | Probing (target, retry) ->
+      Logs.debug ~src:t.logsrc
+        (fun pp -> pp "sending unicast ARP probe for %a/%a (%d left)"
+            Ipaddr.V4.pp k Macaddr.pp target (retry - epoch)) ;
+      cache, request t ~target k :: acc, r
     | _ -> cache, acc, r
   in
   let cache, outs, r = M.fold entry t.cache (t.cache, [], []) in
   { t with cache ; epoch = succ epoch }, outs, r
 
 let handle_reply t source mac =
-  let extcache =
-    let cache = M.add source (Dynamic (mac, t.epoch + t.timeout)) t.cache in
+  let update_cache () =
+    let cache = M.add source (Dynamic (mac, t.epoch + t.refresh)) t.cache in
     { t with cache }
   in
   match M.find source t.cache with
@@ -158,16 +186,29 @@ let handle_reply t source mac =
              Ipaddr.V4.pp source (if adv then "advertised " else ""))
       [@coverage off] ;
     t, None, None
-  | Dynamic (m, _) ->
-    if Macaddr.compare mac m <> 0 then
+  | Dynamic (m, _)
+  | Stale (m, _)
+  | Probing (m, _) ->
+    let t = if Macaddr.compare mac m <> 0 then
+      let cache = M.add source (Stale (mac, t.epoch + t.timeout)) t.cache in
       Logs.warn ~src:t.logsrc
-        (fun pp -> pp "ARP for %a moved from %a to %a"
+        (fun pp -> pp "MAC address for %a moved from %a to %a, marked as stale"
             Ipaddr.V4.pp source
             Macaddr.pp m
-            Macaddr.pp mac) ;
-    extcache, None, None
-  | Pending (xs, _) -> extcache, None, Some (mac, xs)
-
+            Macaddr.pp mac);
+      { t with cache }
+      else (
+      Logs.debug ~src:t.logsrc
+      (fun pp -> pp "ARP reply received for %a/%a, refreshing cache entry"
+          Ipaddr.V4.pp source Macaddr.pp mac);
+      update_cache ())
+    in
+    t, None, None
+  | Pending (xs, _) ->
+    Logs.debug ~src:t.logsrc
+      (fun pp -> pp "ARP reply received for %a/%a, adding cache entry"
+          Ipaddr.V4.pp source Macaddr.pp mac);
+    update_cache (), None, Some (mac, xs)
 
 let handle_request t arp =
   let dest = arp.Arp_packet.target_ip
@@ -225,10 +266,20 @@ let query t ip a =
   | exception Not_found ->
     let a = a None in
     let cache = M.add ip (Pending (a, t.epoch + t.retries)) t.cache in
+    Logs.debug ~src:t.logsrc
+      (fun pp -> pp "sending ARP request for %a --> Pending"
+          Ipaddr.V4.pp ip) ;
     { t with cache }, RequestWait (request t ip, a)
   | Pending (x, r) ->
     let a = a (Some x) in
     let cache = M.add ip (Pending (a, r)) t.cache in
     { t with cache }, Wait a
-  | Static (m, _) -> t, Mac m
-  | Dynamic (m, _) -> t, Mac m
+  | Stale (m, _) ->
+    Logs.debug ~src:t.logsrc
+      (fun pp -> pp "request for stale entry %a/%a --> Probing"
+          Ipaddr.V4.pp ip Macaddr.pp m) ;
+    let cache = M.add ip (Probing (m, t.epoch + t.retries)) t.cache in
+    { t with cache }, Mac m
+  | Static (m, _)
+  | Dynamic (m, _)
+  | Probing (m, _) -> t, Mac m

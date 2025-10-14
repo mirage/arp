@@ -309,6 +309,7 @@ let input_replaces_old () =
   timeout ~time:2000 (
     set_and_check ~listener:listen.arp ~claimant:claimant_1 first_ip >>= fun () ->
     set_and_check ~listener:listen.arp ~claimant:claimant_2 first_ip >>= fun () ->
+    A.remove_ip listen.arp first_ip >>= fun () ->
     V.disconnect listen.netif
     )
 
