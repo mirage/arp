@@ -4,10 +4,57 @@ type 'a entry =
   | Dynamic of Macaddr.t * int
   | Pending of 'a * int
 
-module M = Map.Make(Ipaddr.V4)
+module M = struct
+  module M = Map.Make(Ipaddr.V4)
+  module Present = struct
+    type t = unit
+    let weight (_: t) = 1
+  end
+  module LRU = Lru.F.Make(Ipaddr.V4)(Present)
+
+  type 'a t =
+    { map: 'a entry M.t
+    ; mutable dynamic_lru: LRU.t
+    }
+
+  let empty capacity =
+    { map = M.empty; dynamic_lru = LRU.empty capacity }
+
+  let fold f t init =
+    M.fold f t.map init
+
+  let cardinal t = M.cardinal t.map
+
+  let iter f t = M.iter f t.map
+
+  let find k t =
+    let v = M.find k t.map in
+    t.dynamic_lru <- LRU.promote k t.dynamic_lru;
+    v
+
+  let add k v t =
+    let map = M.add k v t.map
+    and dynamic_lru = match v with
+    | Dynamic _ -> LRU.add k () t.dynamic_lru
+    | _ -> LRU.remove k t.dynamic_lru
+    in
+    let map, dynamic_lru =
+    if LRU.weight t.dynamic_lru > LRU.capacity t.dynamic_lru then begin
+      match LRU.pop_lru t.dynamic_lru with
+      | Some ((drop, ()), dynamic_lru) ->
+        M.remove drop t.map, dynamic_lru
+      | None -> map, dynamic_lru
+    end else
+      map, dynamic_lru
+    in
+    { map; dynamic_lru }
+
+  let remove k t =
+    { map = M.remove k t.map; dynamic_lru = LRU.remove k t.dynamic_lru }
+end
 
 type 'a t = {
-  cache : 'a entry M.t ;
+  cache : 'a M.t;
   mac : Macaddr.t ;
   ip : Ipaddr.V4.t ;
   timeout : int ;
@@ -66,7 +113,7 @@ let alias t ip =
         Ipaddr.V4.pp ip Macaddr.pp t.mac) ;
   { t with cache }, (garp, Macaddr.broadcast), pending t ip
 
-let create ?(timeout = 800) ?(retries = 5)
+let create ?(cache_size=1024) ?(timeout = 800) ?(retries = 5)
     ?(logsrc = Logs.Src.create "arp" ~doc:"ARP handler")
     ?ipaddr
     mac =
@@ -74,7 +121,7 @@ let create ?(timeout = 800) ?(retries = 5)
     invalid_arg "timeout must be strictly positive" ;
   if retries < 0 then
     invalid_arg "retries must be positive" ;
-  let cache = M.empty in
+  let cache = M.empty cache_size in
   let ip = match ipaddr with None -> Ipaddr.V4.any | Some x -> x in
   let t = { cache ; mac ; ip ; timeout ; retries ; epoch = 0 ; logsrc } in
   match ipaddr with
