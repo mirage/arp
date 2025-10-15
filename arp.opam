@@ -14,7 +14,6 @@ depends: [
   "macaddr" {>= "4.0.0"}
   "logs"
   "mirage-sleep" {>= "4.0.0"}
-  "lru" {>= "0.3.0"}
   "lwt"
   "duration"
   "ethernet" {>= "3.0.0"}

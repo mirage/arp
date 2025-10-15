@@ -4,53 +4,106 @@ type 'a entry =
   | Dynamic of Macaddr.t * int
   | Pending of 'a * int
 
+let[@coverage off] pp_entry now k pp =
+  function
+  | Static (m, adv) ->
+    let adv = if adv then " advertising" else "" in
+    Format.fprintf pp "%a at %a (static%s)" Ipaddr.V4.pp k Macaddr.pp m adv
+  | Dynamic (m, t) ->
+    Format.fprintf pp "%a at %a (timeout in %d)" Ipaddr.V4.pp k
+      Macaddr.pp m (t - now)
+  | Pending (_, retries) ->
+    Format.fprintf pp "%a (incomplete, %d retries left)"
+      Ipaddr.V4.pp k (retries - now)
+
 module M = struct
-  module M = Map.Make(Ipaddr.V4)
-  module Present = struct
-    type t = unit
-    let weight (_: t) = 1
+  module IpMap = Map.Make(Ipaddr.V4)
+  module Timeout = struct
+    type t = int * Ipaddr.V4.t
+
+    let compare (t1, ip1) (t2, ip2) =
+      match Int.compare t1 t2 with
+      | 0 -> Ipaddr.V4.compare ip1 ip2
+      | n -> n
+
+    let of_entry k = function
+      | Static _ | Pending _ -> None
+      | Dynamic (_, timeout) -> Some (timeout, k)
   end
-  module LRU = Lru.F.Make(Ipaddr.V4)(Present)
 
-  type 'a t =
-    { map: 'a entry M.t
-    ; mutable dynamic_lru: LRU.t
-    }
+  module Timeouts = Set.Make(Timeout)
 
-  let empty capacity =
-    { map = M.empty; dynamic_lru = LRU.empty capacity }
+  type !+'a t =
+  { map: 'a entry IpMap.t
+  ; values: Timeouts.t
+  ; capacity: int
+  }
 
-  let fold f t init =
-    M.fold f t.map init
+  let empty capacity = 
+    { map = IpMap.empty; values = Timeouts.empty; capacity }
 
-  let cardinal t = M.cardinal t.map
+  let cardinal t = IpMap.cardinal t.map
 
-  let iter f t = M.iter f t.map
 
-  let find k t =
-    let v = M.find k t.map in
-    t.dynamic_lru <- LRU.promote k t.dynamic_lru;
-    v
+  let invariant t =
+    assert (cardinal t <= t.capacity);
+    (* only dynamic values are stored in TimeoutMap, due to functional 'a we can't easily compare it *)
+    assert (IpMap.cardinal t.map >= Timeouts.cardinal t.values);
+    assert (Timeouts.for_all (fun ((_, k) as v) ->
+      Option.compare Timeout.compare (IpMap.find k t.map |> Timeout.of_entry k) (Some v) = 0)
+      t.values);
 
-  let add k v t =
-    let map = M.add k v t.map
-    and dynamic_lru = match v with
-    | Dynamic _ -> LRU.add k () t.dynamic_lru
-    | _ -> LRU.remove k t.dynamic_lru
+    assert (IpMap.for_all (fun k v ->
+      match Timeout.of_entry k v with
+      | None -> true
+      | Some v' ->
+          Timeouts.mem v' t.values) t.map);
+    assert (Timeouts.for_all (fun ((_, k) as v) ->
+      match Timeout.of_entry k (IpMap.find k t.map) with
+      | None -> false
+      | Some v' -> Timeout.compare v v' = 0
+    ) t.values)
+
+  let find k t = IpMap.find k t.map
+
+  let fold f t init = IpMap.fold f t.map init
+
+  let iter f t = IpMap.iter f t.map
+
+  let remove_kv k v t =
+    let values =
+      match v with
+      | None -> t.values
+      | Some v -> Timeouts.remove v t.values
     in
-    let map, dynamic_lru =
-    if LRU.weight t.dynamic_lru > LRU.capacity t.dynamic_lru then begin
-      match LRU.pop_lru t.dynamic_lru with
-      | Some ((drop, ()), dynamic_lru) ->
-        M.remove drop t.map, dynamic_lru
-      | None -> map, dynamic_lru
-    end else
-      map, dynamic_lru
+    { t with map = IpMap.remove k t.map
+    ; values }
+
+  let add ~logsrc ~epoch k v t =
+    let values =
+      match Timeout.of_entry k v with
+      | None -> t.values
+      | Some v -> Timeouts.add v t.values
     in
-    { map; dynamic_lru }
+    let t =
+      { t with map = IpMap.add k v t.map
+      ; values
+      }
+    in
+    if cardinal t > t.capacity then
+      let (timeout, k) as v = Timeouts.min_elt t.values in
+      Logs.debug ~src:logsrc
+        (fun pp -> pp "dropping ARP entry %a (timeout in %d)"
+            Ipaddr.V4.pp k (timeout - epoch)) ;
+      remove_kv k (Some v) t
+    else
+      t
 
   let remove k t =
-    { map = M.remove k t.map; dynamic_lru = LRU.remove k t.dynamic_lru }
+    match IpMap.find_opt k t.map with
+    | Some v ->
+        remove_kv k (Timeout.of_entry k v) t
+    | None -> t
 end
 
 type 'a t = {
@@ -71,19 +124,8 @@ let ips t =
 
 let mac t = t.mac
 
-let[@coverage off] pp_entry now k pp =
-  function
-  | Static (m, adv) ->
-    let adv = if adv then " advertising" else "" in
-    Format.fprintf pp "%a at %a (static%s)" Ipaddr.V4.pp k Macaddr.pp m adv
-  | Dynamic (m, t) ->
-    Format.fprintf pp "%a at %a (timeout in %d)" Ipaddr.V4.pp k
-      Macaddr.pp m (t - now)
-  | Pending (_, retries) ->
-    Format.fprintf pp "%a (incomplete, %d retries left)"
-      Ipaddr.V4.pp k (retries - now)
-
 let[@coverage off] pp pp t =
+  M.invariant t.cache;
   Format.fprintf pp "mac %a ip %a entries %d timeout %d retries %d@."
     Macaddr.pp t.mac
     Ipaddr.V4.pp t.ip
@@ -100,7 +142,7 @@ let pending t ip =
 let mac0 = Macaddr.of_octets_exn (Cstruct.to_string (Cstruct.create 6))
 
 let alias t ip =
-  let cache = M.add ip (Static (t.mac, true)) t.cache in
+  let cache = M.add ~logsrc:t.logsrc ~epoch:t.epoch ip (Static (t.mac, true)) t.cache in
   (* see RFC5227 Section 3 why we send out an ARP request *)
   let garp = Arp_packet.({
       operation = Request ;
@@ -131,7 +173,7 @@ let create ?(cache_size=1024) ?(timeout = 800) ?(retries = 5)
     t, Some garp
 
 let static t ip mac =
-  let cache = M.add ip (Static (mac, false)) t.cache in
+  let cache = M.add ~logsrc:t.logsrc ~epoch:t.epoch ip (Static (mac, false)) t.cache in
   { t with cache }, pending t ip
 
 let remove t ip =
@@ -186,7 +228,7 @@ let tick t =
 
 let handle_reply t source mac =
   let extcache =
-    let cache = M.add source (Dynamic (mac, t.epoch + t.timeout)) t.cache in
+    let cache = M.add ~logsrc:t.logsrc ~epoch:t.epoch source (Dynamic (mac, t.epoch + t.timeout)) t.cache in
     { t with cache }
   in
   match M.find source t.cache with
@@ -271,11 +313,11 @@ let query t ip a =
   match M.find ip t.cache with
   | exception Not_found ->
     let a = a None in
-    let cache = M.add ip (Pending (a, t.epoch + t.retries)) t.cache in
+    let cache = M.add ~logsrc:t.logsrc ~epoch:t.epoch ip (Pending (a, t.epoch + t.retries)) t.cache in
     { t with cache }, RequestWait (request t ip, a)
   | Pending (x, r) ->
     let a = a (Some x) in
-    let cache = M.add ip (Pending (a, r)) t.cache in
+    let cache = M.add ~logsrc:t.logsrc ~epoch:t.epoch ip (Pending (a, r)) t.cache in
     { t with cache }, Wait a
   | Static (m, _) -> t, Mac m
   | Dynamic (m, _) -> t, Mac m
