@@ -21,13 +21,7 @@ let rec gen_mac () =
   else
     buf, mac
 
-let hdr =
-  let buf = Cstruct.create 6 in
-  Cstruct.BE.set_uint16 buf 0 1 ;
-  Cstruct.BE.set_uint16 buf 2 0x0800 ;
-  Cstruct.set_uint8 buf 4 6 ;
-  Cstruct.set_uint8 buf 5 4 ;
-  buf
+let hdr = Cstruct.of_string "\000\001\008\000\006\004"
 
 let gen_int () =
   let buf = generate 1 in
@@ -191,7 +185,7 @@ end
 
 module Handling = struct
   let garp_of ip mac =
-    let mac0 = Macaddr.of_octets_exn (Cstruct.to_string (Cstruct.create 6)) in
+    let mac0 = Macaddr.of_octets_exn (String.make 6 '\000') in
     { Arp_packet.operation = Arp_packet.Request ;
       source_ip = ip ; target_ip = ip ;
       source_mac = mac ; target_mac = mac0 }
