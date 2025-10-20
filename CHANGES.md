@@ -1,3 +1,8 @@
+## v4.1.0 (2025-10-20)
+
+* Use LRU cache for Dynamic entries to avoid excessive memory consumption
+  (#35 @edwintorok)
+
 ## v4.0.0 (2025-02-05)
 
 * Use mirage-sleep instead of mirage-time (no need to functorize over
