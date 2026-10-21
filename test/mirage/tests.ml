@@ -312,7 +312,7 @@ let input_replaces_old () =
     V.disconnect listen.netif
     )
 
-let os_linux_bsd () =
+let os_linux_freebsd () =
   let cmd = Bos.Cmd.(v "uname" % "-s") in
   match Bos.OS.Cmd.(run_out cmd |> out_string |> success) with
   | Ok s when s = "FreeBSD" -> true
@@ -321,32 +321,41 @@ let os_linux_bsd () =
   | Error _ -> false
 
 let entries_expire () =
-  (* this test fails on windows and macOS for unknown reasons. please, if you
-     happen to have your hands on such a machine, investigate the issue. *)
-  if not (os_linux_bsd ()) then
-    Lwt.return_unit
-  else
-    two_arp () >>= fun (listen, speak) ->
-    A.set_ips listen.arp [ second_ip ] >>= fun () ->
-    (* here's what we expect listener to emit once its cache entry has expired *)
-    let expected_arp_query =
-      Arp_packet.({operation = Request;
-                   source_mac = V.mac listen.netif;
-                   target_mac = Macaddr.broadcast;
-                   source_ip = second_ip; target_ip = first_ip})
+  two_arp () >>= fun (listen, speak) ->
+  A.set_ips listen.arp [ second_ip ] >>= fun () ->
+  (* here's what we expect listener to emit once its cache entry has expired *)
+  let expected_arp_query =
+    Arp_packet.({operation = Request;
+                  source_mac = V.mac listen.netif;
+                  target_mac = Macaddr.broadcast;
+                  source_ip = second_ip; target_ip = first_ip})
+  in
+  (* start ARP listener that will stay active throughout the test *)
+  Lwt.async (fun () -> V.listen listen.netif ~header_size (start_arp_listener listen ()) >|= fun _ -> ());
+  let for_listener = arp_reply ~from_netif:speak.netif ~to_netif:listen.netif
+                                ~from_ip:first_ip ~to_ip:second_ip in
+  let establish_entry =
+    let query = A.query listen.arp first_ip >>= function
+      | Ok mac when Macaddr.compare mac (V.mac speak.netif) = 0 -> Lwt.return_unit
+      | Ok mac -> failf "got unexpected MAC %a, expected %a"
+                    Macaddr.pp mac Macaddr.pp (V.mac speak.netif)
+      | Error e -> failf "query failed: %a" A.pp_error e
     in
-    (* query for IP to accept responses *)
-    Lwt.async (fun () -> A.query listen.arp first_ip >|= ignore) ;
-    Lwt.async (fun () -> V.listen listen.netif ~header_size (start_arp_listener listen ()) >|= fun _ -> ());
-    let test =
-      Mirage_sleep.ns (Duration.of_ms 10) >>= fun () ->
-      set_and_check ~listener:listen.arp ~claimant:speak first_ip >>= fun () ->
-      (* sleep for 5s to make sure we hit `tick` often enough *)
-      Mirage_sleep.ns (Duration.of_sec 5) >>= fun () ->
-      (* asking now should generate a query *)
-      not_in_cache ~listen:speak.netif expected_arp_query listen.arp first_ip
+    let send_reply =
+      E.write speak.ethif (V.mac listen.netif) `ARP ~size for_listener >|= function
+      | Ok _ -> ()
+      | Error _ -> failf "ethernet write failed"
     in
-    timeout ~time:7000 test
+    query >>= fun () -> send_reply
+  in
+  timeout ~time:1000 establish_entry >>= fun () ->
+  (* wait for cache entry to expire, entry is removed after timeout (800 ticks *
+    2ms = 1600ms) from initial creation *)
+  (* CI for MacOS/OpenBSD/etc. has slower ticks, wait longer *)
+  let delay = if os_linux_freebsd () then 5 else 20 in
+  Mirage_sleep.ns (Duration.of_sec delay) >>= fun () ->
+  (* querying now should generate an ARP request since entry should be removed *)
+  timeout ~time:1000 (not_in_cache ~listen:speak.netif expected_arp_query listen.arp first_ip)
 
 (* RFC isn't strict on how many times to try, so we'll just say any number
    greater than 1 is fine *)
